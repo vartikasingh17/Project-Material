@@ -1,0 +1,277 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body */
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #f4f6f8;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #004481;
+  padding: 12px 32px;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.navbar .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar .logo img {
+  height: 42px;
+  width: auto;
+}
+
+.navbar ul {
+  list-style: none;
+  display: flex;
+  gap: 24px;
+}
+
+.navbar ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.navbar ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 32px;
+  background-color: white;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.page-header h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #004481;
+}
+
+.header-buttons .btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn.primary {
+  background-color: #00a862;
+  color: white;
+}
+
+.btn.secondary {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.access-level {
+  font-size: 14px;
+  color: #555;
+}
+
+.view-modes {
+  display: flex;
+  gap: 10px;
+}
+
+.mode-btn {
+  padding: 8px 14px;
+  border: 1px solid #004481;
+  background: white;
+  color: #004481;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+  background-color: #e8f0f4;
+}
+
+.mode-btn.active {
+  background-color: #004481;
+  color: white;
+}
+
+/* Transactions Section */
+.transactions {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.transaction-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  flex-wrap: wrap;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.transaction-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+.transaction-details,
+.transaction-info {
+  flex: 1;
+}
+
+.transaction-details p,
+.transaction-info p {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.status {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 13px;
+}
+
+.status.completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status.failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  background-color: #f0f0f0;
+  border-top: 1px solid #ddd;
+  position: sticky;
+  bottom: 0;
+}
+
+.bottom-btn {
+  padding: 8px 16px;
+  border: 1px solid #004481;
+  background: white;
+  color: #004481;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.bottom-btn:hover {
+  background-color: #e8f0f4;
+}
+
+.bottom-btn.active {
+  background-color: #004481;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .transactions {
+    padding: 16px;
+  }
+  
+  .transaction-card {
+    flex-direction: column;
+  }
+
+  .navbar ul {
+    gap: 16px;
+  }
+}
+/* Previous & Next Navigation Buttons */
+.single-nav {
+  position: fixed;         /* Always visible on screen */
+  bottom: 20px;            /* 20px from bottom */
+  right: 30px;             /* 30px from right */
+  display: flex;
+  gap: 14px;
+  z-index: 999;            /* Stay on top of content */
+}
+
+.single-nav button {
+  padding: 12px 26px;      /* Bigger size */
+  font-size: 16px;         /* Larger text */
+  font-weight: 600;        /* Bolder */
+  border: none;
+  border-radius: 6px;
+  background-color: #004481;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.single-nav button:hover {
+  background-color: #0066a1;
+  transform: translateY(-2px);
+}
+
+.single-nav button:active {
+  background-color: #00335c;
+  transform: translateY(0);
+}

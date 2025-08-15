@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Preview - Standard Chartered</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="#">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Standard_Chartered_Logo_%282021%2C_Logo_only%29.svg" alt="Website Logo" style="height:50px; width:auto;">
+      </a>
+      Standard Chartered
+    </div>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Transactions</a></li>
+      <li><a href="#">Settings</a></li>
+    </ul>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <h1>Transaction Preview</h1>
+    <div class="header-buttons">
+      <button class="btn secondary">Back</button>
+      <button class="btn secondary" onclick="window.print()">Print</button>
+      <button class="btn primary">Download</button>
+    </div>
+  </header>
+
+  <!-- View Controls -->
+  <div class="controls">
+    <span class="access-level">Access Level: <strong>Full Access</strong></span>
+    <div class="view-modes">
+      <button class="mode-btn active" data-view="single">Single Transaction</button>
+      <button class="mode-btn" data-view="multiple">Multiple Transactions</button>
+    </div>
+  </div>
+
+  <!-- Transaction List -->
+  <main class="transactions">
+
+    <div class="transaction-card">
+      <div class="transaction-details">
+        <p><strong>Transaction ID:</strong> SCB-2024-001234</p>
+        <p><strong>Reference Number:</strong> REF-ABC123456</p>
+        <p class="status completed">Completed</p>
+        <p><strong>Payment Mode:</strong> Standard Chartered Online Banking</p>
+      </div>
+      <div class="transaction-info">
+        <p><strong>Amount:</strong> $1,250.75</p>
+        <p><strong>Beneficiary Name:</strong> John Smith</p>
+        <p><strong>Payment Date:</strong> Aug 7, 2024, 04:00 PM</p>
+      </div>
+    </div>
+
+    <div class="transaction-card">
+      <div class="transaction-details">
+        <p><strong>Transaction ID:</strong> SCB-2024-001235</p>
+        <p><strong>Reference Number:</strong> REF-DEF789012</p>
+        <p class="status pending">Pending</p>
+        <p><strong>Payment Mode:</strong> Standard Chartered Mobile App</p>
+      </div>
+      <div class="transaction-info">
+        <p><strong>Amount:</strong> $500.00</p>
+        <p><strong>Beneficiary Name:</strong> Sarah Johnson</p>
+        <p><strong>Payment Date:</strong> Aug 7, 2024, 07:45 PM</p>
+      </div>
+    </div>
+
+    <div class="transaction-card">
+      <div class="transaction-details">
+        <p><strong>Transaction ID:</strong> SCB-2024-001236</p>
+        <p><strong>Reference Number:</strong> REF-GHI345678</p>
+        <p class="status failed">Failed</p>
+        <p><strong>Payment Mode:</strong> Standard Chartered ATM Transfer</p>
+      </div>
+      <div class="transaction-info">
+        <p><strong>Amount:</strong> $750.25</p>
+        <p><strong>Beneficiary Name:</strong> Michael Brown</p>
+        <p><strong>Payment Date:</strong> Aug 6, 2024, 10:15 PM</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Navigation for Single Transaction -->
+  <div class="single-nav">
+    <button id="prevBtn">Previous</button>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <!-- Bottom Navigation for View Switch -->
+  <footer class="bottom-nav">
+    <button class="bottom-btn active" data-view="single">Single Transaction View</button>
+    <button class="bottom-btn" data-view="multiple">Multiple Transactions View</button>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
