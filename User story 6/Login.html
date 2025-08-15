@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transaction Preview - Standard Chartered</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -12,7 +13,7 @@
   <nav class="navbar">
     <div class="logo">
       <a href="#">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Standard_Chartered_Logo_%282021%2C_Logo_only%29.svg" alt="Website Logo" style="height:50px; width:auto;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Standard_Chartered_Logo_%282021%2C_Logo_only%29.svg" alt="Website Logo">
       </a>
       Standard Chartered
     </div>
@@ -29,7 +30,7 @@
     <div class="header-buttons">
       <button class="btn secondary">Back</button>
       <button class="btn secondary" onclick="window.print()">Print</button>
-      <button class="btn primary">Download</button>
+      <button class="btn primary" id="downloadBtn">Download</button>
     </div>
   </header>
 
@@ -43,8 +44,11 @@
   </div>
 
   <!-- Transaction List -->
-  <main class="transactions">
+  <main class="transactions" id="transactionSection">
 
+    <h2 style="text-align:center; margin-bottom:15px;">Transaction Statement</h2>
+
+    <!-- Transactions -->
     <div class="transaction-card">
       <div class="transaction-details">
         <p><strong>Transaction ID:</strong> SCB-2024-001234</p>
@@ -87,6 +91,34 @@
       </div>
     </div>
 
+    <div class="transaction-card">
+      <div class="transaction-details">
+        <p><strong>Transaction ID:</strong> SCB-2024-001237</p>
+        <p><strong>Reference Number:</strong> REF-JKL987654</p>
+        <p class="status completed">Completed</p>
+        <p><strong>Payment Mode:</strong> UPI Transfer</p>
+      </div>
+      <div class="transaction-info">
+        <p><strong>Amount:</strong> $320.00</p>
+        <p><strong>Beneficiary Name:</strong> Priya Sharma</p>
+        <p><strong>Payment Date:</strong> Aug 6, 2024, 08:20 AM</p>
+      </div>
+    </div>
+
+    <div class="transaction-card">
+      <div class="transaction-details">
+        <p><strong>Transaction ID:</strong> SCB-2024-001238</p>
+        <p><strong>Reference Number:</strong> REF-MNO456321</p>
+        <p class="status completed">Completed</p>
+        <p><strong>Payment Mode:</strong> Debit Card</p>
+      </div>
+      <div class="transaction-info">
+        <p><strong>Amount:</strong> $2,000.00</p>
+        <p><strong>Beneficiary Name:</strong> Amit Kumar</p>
+        <p><strong>Payment Date:</strong> Aug 5, 2024, 02:15 PM</p>
+      </div>
+    </div>
+
   </main>
 
   <!-- Navigation for Single Transaction -->
@@ -102,5 +134,24 @@
   </footer>
 
   <script src="script.js"></script>
+  <script>
+  document.getElementById("downloadBtn").addEventListener("click", function () {
+    // Select the section you want to download
+    const element = document.getElementById("transactionSection");
+
+    // PDF options
+    const opt = {
+      margin:       0.5,
+      filename:     'Transaction_Statement.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    // Generate and download the PDF
+    html2pdf().from(element).set(opt).save();
+  });
+</script>
+
 </body>
 </html>

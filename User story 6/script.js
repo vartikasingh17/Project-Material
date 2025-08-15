@@ -58,5 +58,4 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-// Default to Single View on load
-setActive("single");
+
