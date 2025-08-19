@@ -56,6 +56,7 @@ nextBtn.addEventListener("click", () => {
     currentIndex++;
     updateSingleView();
   }
+  
 });
 
 
