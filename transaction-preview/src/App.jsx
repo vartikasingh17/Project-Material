@@ -50,7 +50,7 @@ const transactionsData = [
 ];
 
 function App() {
-  const [view, setView] = useState("single"); // "single" or "multiple"
+  const [view, setView] = useState("single"); // "single" | "multiple"
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState("all"); // "all" | "completed" | "pending" | "failed"
 
@@ -63,28 +63,30 @@ function App() {
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
     };
-    window.html2pdf().from(element).set(opt).save();
+    if (window && window.html2pdf) {
+      window.html2pdf().from(element).set(opt).save();
+    }
   };
 
-  // Apply filter
+  // 1) Apply filter
   const filteredTransactions =
     filter === "all"
       ? transactionsData
       : transactionsData.filter((t) => t.status === filter);
 
-  // Transactions to display
+  // 2) Clamp index so we never access out of bounds
+  const safeIndex =
+    filteredTransactions.length === 0
+      ? 0
+      : Math.min(currentIndex, filteredTransactions.length - 1);
+
+  // 3) Decide which list to render
   const transactionsToShow =
     view === "single"
       ? filteredTransactions.length > 0
-        ? [filteredTransactions[currentIndex]]
+        ? [filteredTransactions[safeIndex]]
         : []
       : filteredTransactions;
-
-  // Adjust navigation when filter changes
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
-    setCurrentIndex(0);
-  };
 
   return (
     <div>
@@ -133,7 +135,7 @@ function App() {
         </span>
         <div className="view-modes">
           <button
-            className={`mode-btn ${view === "single" ? "active" : ""}`}
+            className={"mode-btn " + (view === "single" ? "active" : "")}
             onClick={() => {
               setView("single");
               setCurrentIndex(0);
@@ -142,17 +144,20 @@ function App() {
             Single Transaction
           </button>
           <button
-            className={`mode-btn ${view === "multiple" ? "active" : ""}`}
+            className={"mode-btn " + (view === "multiple" ? "active" : "")}
             onClick={() => setView("multiple")}
           >
             Multiple Transactions
           </button>
 
-          {/* Filter dropdown */}
+          {/* Filter Dropdown */}
           <select
             className="filter-dropdown"
             value={filter}
-            onChange={(e) => handleFilterChange(e.target.value)}
+            onChange={(e) => {
+              setFilter(e.target.value);
+              setCurrentIndex(0); // reset to first match when filter changes
+            }}
           >
             <option value="all">All</option>
             <option value="completed">Completed</option>
@@ -168,9 +173,13 @@ function App() {
           Transaction Statement
         </h2>
 
-        {transactionsToShow.length > 0 ? (
+        {transactionsToShow.length === 0 ? (
+          <p style={{ textAlign: "center", color: "#777" }}>
+            No transactions found for filter: {filter}
+          </p>
+        ) : (
           transactionsToShow.map((t, i) => (
-            <div className="transaction-card" key={i}>
+            <div className="transaction-card" key={t.id + "-" + i}>
               <div className="transaction-details">
                 <p>
                   <strong>Transaction ID:</strong> {t.id}
@@ -178,7 +187,7 @@ function App() {
                 <p>
                   <strong>Reference Number:</strong> {t.reference}
                 </p>
-                <p className={`status ${t.status}`}>{t.status}</p>
+                <p className={"status " + t.status}>{t.status}</p>
                 <p>
                   <strong>Payment Mode:</strong> {t.mode}
                 </p>
@@ -196,10 +205,6 @@ function App() {
               </div>
             </div>
           ))
-        ) : (
-          <p style={{ textAlign: "center", fontStyle: "italic" }}>
-            No transactions found for this filter.
-          </p>
         )}
       </main>
 
@@ -208,15 +213,19 @@ function App() {
         <div className="single-nav">
           <button
             id="prevBtn"
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex((prev) => prev - 1)}
+            disabled={safeIndex === 0}
+            onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
           >
             Previous
           </button>
           <button
             id="nextBtn"
-            disabled={currentIndex === filteredTransactions.length - 1}
-            onClick={() => setCurrentIndex((prev) => prev + 1)}
+            disabled={safeIndex === filteredTransactions.length - 1}
+            onClick={() =>
+              setCurrentIndex((prev) =>
+                Math.min(prev + 1, filteredTransactions.length - 1)
+              )
+            }
           >
             Next
           </button>
@@ -226,7 +235,7 @@ function App() {
       {/* Bottom Nav */}
       <footer className="bottom-nav">
         <button
-          className={`bottom-btn ${view === "single" ? "active" : ""}`}
+          className={"bottom-btn " + (view === "single" ? "active" : "")}
           onClick={() => {
             setView("single");
             setCurrentIndex(0);
@@ -235,7 +244,7 @@ function App() {
           Single Transaction View
         </button>
         <button
-          className={`bottom-btn ${view === "multiple" ? "active" : ""}`}
+          className={"bottom-btn " + (view === "multiple" ? "active" : "")}
           onClick={() => setView("multiple")}
         >
           Multiple Transactions View
