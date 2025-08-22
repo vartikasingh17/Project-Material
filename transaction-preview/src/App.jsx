@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "./App.css";
 
 const transactionsData = [
   {
@@ -50,37 +49,52 @@ const transactionsData = [
 ];
 
 function App() {
-  const [view, setView] = useState("single"); // "single" | "multiple"
+  const [view, setView] = useState("single");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [filter, setFilter] = useState("all"); // "all" | "completed" | "pending" | "failed"
+  const [filter, setFilter] = useState("all");
+  const [accessLevel, setAccessLevel] = useState("Full Access");
 
   const handleDownload = () => {
     const element = document.getElementById("transactionSection");
-    const opt = {
-      margin: 0.5,
-      filename: "Transaction_Statement.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-    };
-    if (window && window.html2pdf) {
+    if (typeof window !== "undefined" && window.html2pdf && element) {
+      const opt = {
+        margin: 0.5,
+        filename: "Transaction_Statement.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+      };
       window.html2pdf().from(element).set(opt).save();
+    } else {
+      const content = JSON.stringify(
+        filter === "all"
+          ? transactionsData
+          : transactionsData.filter((t) => t.status === filter),
+        null,
+        2
+      );
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "transactions.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     }
   };
 
-  // 1) Apply filter
   const filteredTransactions =
     filter === "all"
       ? transactionsData
       : transactionsData.filter((t) => t.status === filter);
 
-  // 2) Clamp index so we never access out of bounds
   const safeIndex =
     filteredTransactions.length === 0
       ? 0
       : Math.min(currentIndex, filteredTransactions.length - 1);
 
-  // 3) Decide which list to render
   const transactionsToShow =
     view === "single"
       ? filteredTransactions.length > 0
@@ -88,75 +102,230 @@ function App() {
         : []
       : filteredTransactions;
 
+  // Hover helpers
+  const hoverToBlue = (e) => {
+    e.currentTarget.style.backgroundColor = "#0072ce";
+    e.currentTarget.style.color = "#fff";
+  };
+  const hoverToWhite = (e) => {
+    e.currentTarget.style.backgroundColor = "#fff";
+    e.currentTarget.style.color = "#0072ce";
+  };
+
+  const statusPillStyle = (status) => {
+    const map = {
+      completed: { c: "#00b140", bg: "rgba(0,177,64,0.12)" },
+      pending: { c: "#0072ce", bg: "rgba(0,114,206,0.12)" },
+      failed: { c: "#b00020", bg: "rgba(176,0,32,0.12)" },
+    };
+    const { c, bg } = map[status] || map.pending;
+    return {
+      padding: "6px 12px",
+      borderRadius: "999px",
+      border: `1px solid ${c}`,
+      background: bg,
+      color: c,
+      fontWeight: 600,
+      fontSize: "12px",
+      textTransform: "capitalize",
+      cursor: "default",
+    };
+  };
+
   return (
-    <div>
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="logo">
-          <a href="#">
+    <div
+      style={{
+        fontFamily: "Segoe UI, Arial, sans-serif",
+        backgroundColor: "#f4f6f8",
+        minHeight: "100vh",
+        color: "#333",
+      }}
+    >
+      {/* Navbar (no menu links) */}
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 20px",
+          backgroundColor: "#0072ce",
+          color: "#fff",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontWeight: 600,
+          }}
+        >
+          <a href="#" style={{ display: "inline-flex" }}>
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Standard_Chartered_Logo_%282021%2C_Logo_only%29.svg"
               alt="Website Logo"
+              style={{ height: "34px", width: "auto" }}
             />
           </a>
           Standard Chartered
         </div>
-        <ul>
-          <li>
-            <a href="#">Home</a>
-          </li>
-          <li>
-            <a href="#">Transactions</a>
-          </li>
-          <li>
-            <a href="#">Settings</a>
-          </li>
-        </ul>
+
       </nav>
 
       {/* Page Header */}
-      <header className="page-header">
-        <h1>Transaction Preview</h1>
-        <div className="header-buttons">
-          <button className="btn secondary">Back</button>
-          <button className="btn secondary" onClick={() => window.print()}>
+      <header
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "20px",
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Transaction Preview</h1>
+        <div>
+          <button
+            style={{
+              margin: "0 6px",
+              padding: "8px 15px",
+              background: "#ddd",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            Back
+          </button>
+          <button
+            onClick={() => window.print()}
+            style={{
+              margin: "0 6px",
+              padding: "8px 15px",
+              background: "#ddd",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
             Print
           </button>
-          <button className="btn primary" onClick={handleDownload}>
+          <button
+            onClick={handleDownload}
+            style={{
+              margin: "0 6px",
+              padding: "8px 15px",
+              background: "#00b140",
+              color: "#fff",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
             Download
           </button>
         </div>
       </header>
 
       {/* Controls */}
-      <div className="controls">
-        <span className="access-level">
-          Access Level: <strong>Full Access</strong>
-        </span>
-        <div className="view-modes">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 20px",
+          background: "#fff",
+          borderBottom: "1px solid #ddd",
+          borderRadius: "6px",
+          margin: "0 20px",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        {/* Access Level dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label htmlFor="accessLevel" style={{ fontSize: "14px" }}>
+            Access Level:
+          </label>
+          <select
+            id="accessLevel"
+            value={accessLevel}
+            onChange={(e) => setAccessLevel(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              cursor: "pointer",
+            }}
+          >
+            <option>Full Access</option>
+            <option>Read Only</option>
+            <option>Auditor</option>
+            <option>Restricted</option>
+          </select>
+        </div>
+
+        {/* View + Filter */}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {/* Single Transaction button (white, hover blue) */}
           <button
-            className={"mode-btn " + (view === "single" ? "active" : "")}
             onClick={() => {
               setView("single");
               setCurrentIndex(0);
             }}
+            onMouseEnter={(e) => {
+              if (view !== "single") hoverToBlue(e);
+            }}
+            onMouseLeave={(e) => {
+              if (view !== "single") hoverToWhite(e);
+            }}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #0072ce",
+              borderRadius: "4px",
+              background: view === "single" ? "#0072ce" : "#fff",
+              color: view === "single" ? "#fff" : "#0072ce",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "0.3s ease",
+            }}
           >
             Single Transaction
           </button>
+
+          {/* Multiple Transactions button (white, hover blue) */}
           <button
-            className={"mode-btn " + (view === "multiple" ? "active" : "")}
             onClick={() => setView("multiple")}
+            onMouseEnter={(e) => {
+              if (view !== "multiple") hoverToBlue(e);
+            }}
+            onMouseLeave={(e) => {
+              if (view !== "multiple") hoverToWhite(e);
+            }}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #0072ce",
+              borderRadius: "4px",
+              background: view === "multiple" ? "#0072ce" : "#fff",
+              color: view === "multiple" ? "#fff" : "#0072ce",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "0.3s ease",
+            }}
           >
             Multiple Transactions
           </button>
 
-          {/* Filter Dropdown */}
+          {/* Filter dropdown */}
           <select
-            className="filter-dropdown"
             value={filter}
             onChange={(e) => {
               setFilter(e.target.value);
-              setCurrentIndex(0); // reset to first match when filter changes
+              setCurrentIndex(0);
+            }}
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              cursor: "pointer",
             }}
           >
             <option value="all">All</option>
@@ -168,7 +337,7 @@ function App() {
       </div>
 
       {/* Transactions Section */}
-      <main className="transactions" id="transactionSection">
+      <main id="transactionSection" style={{ padding: "20px" }}>
         <h2 style={{ textAlign: "center", marginBottom: "15px" }}>
           Transaction Statement
         </h2>
@@ -179,73 +348,195 @@ function App() {
           </p>
         ) : (
           transactionsToShow.map((t, i) => (
-            <div className="transaction-card" key={t.id + "-" + i}>
-              <div className="transaction-details">
-                <p>
-                  <strong>Transaction ID:</strong> {t.id}
-                </p>
-                <p>
-                  <strong>Reference Number:</strong> {t.reference}
-                </p>
-                <p className={"status " + t.status}>{t.status}</p>
-                <p>
-                  <strong>Payment Mode:</strong> {t.mode}
-                </p>
+            <div
+              key={t.id + "-" + i}
+              style={{
+                background: "#fff",
+                padding: "16px",
+                marginBottom: "16px",
+                borderRadius: "8px",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                display: "flex",
+                gap: "20px",
+                alignItems: "stretch",
+              }}
+            >
+              {/* Left: details (two columns) */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px 20px",
+                  flex: 1,
+                }}
+              >
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Transaction ID:</strong> {t.id}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Reference Number:</strong> {t.reference}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Payment Mode:</strong> {t.mode}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Amount:</strong> {t.amount}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Beneficiary:</strong> {t.beneficiary}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Date:</strong> {t.date}
+                  </p>
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <button type="button" style={statusPillStyle(t.status)}>
+                    {t.status}
+                  </button>
+                </div>
               </div>
-              <div className="transaction-info">
-                <p>
-                  <strong>Amount:</strong> {t.amount}
-                </p>
-                <p>
-                  <strong>Beneficiary Name:</strong> {t.beneficiary}
-                </p>
-                <p>
-                  <strong>Payment Date:</strong> {t.date}
-                </p>
-              </div>
+
+              {/* Right: Prev/Next (only show in single view) */}
+              {view === "single" && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "stretch",
+                    gap: "10px",
+                    minWidth: "160px",
+                    borderLeft: "1px solid #eee",
+                    paddingLeft: "16px",
+                  }}
+                >
+                  <button
+                    disabled={safeIndex === 0}
+                    onClick={() =>
+                      setCurrentIndex((prev) => Math.max(prev - 1, 0))
+                    }
+                    onMouseEnter={(e) => {
+                      if (safeIndex !== 0) hoverToBlue(e);
+                    }}
+                    onMouseLeave={(e) => {
+                      if (safeIndex !== 0) hoverToWhite(e);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: "1px solid #0072ce",
+                      background: "#fff",
+                      color: "#0072ce",
+                      cursor: safeIndex === 0 ? "not-allowed" : "pointer",
+                      opacity: safeIndex === 0 ? 0.6 : 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={safeIndex === filteredTransactions.length - 1}
+                    onClick={() =>
+                      setCurrentIndex((prev) =>
+                        Math.min(prev + 1, filteredTransactions.length - 1)
+                      )
+                    }
+                    onMouseEnter={(e) => {
+                      if (safeIndex !== filteredTransactions.length - 1)
+                        hoverToBlue(e);
+                    }}
+                    onMouseLeave={(e) => {
+                      if (safeIndex !== filteredTransactions.length - 1)
+                        hoverToWhite(e);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: "1px solid #0072ce",
+                      background: "#fff",
+                      color: "#0072ce",
+                      cursor:
+                        safeIndex === filteredTransactions.length - 1
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity:
+                        safeIndex === filteredTransactions.length - 1 ? 0.6 : 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}
       </main>
 
-      {/* Single Nav (Prev/Next) */}
-      {view === "single" && filteredTransactions.length > 0 && (
-        <div className="single-nav">
-          <button
-            id="prevBtn"
-            disabled={safeIndex === 0}
-            onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-          >
-            Previous
-          </button>
-          <button
-            id="nextBtn"
-            disabled={safeIndex === filteredTransactions.length - 1}
-            onClick={() =>
-              setCurrentIndex((prev) =>
-                Math.min(prev + 1, filteredTransactions.length - 1)
-              )
-            }
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* Bottom Nav */}
-      <footer className="bottom-nav">
+      {/* Bottom View Switcher */}
+      <footer
+        style={{
+          marginTop: "10px",
+          display: "flex",
+          justifyContent: "center",
+          gap: "15px",
+          padding: "14px",
+        }}
+      >
         <button
-          className={"bottom-btn " + (view === "single" ? "active" : "")}
           onClick={() => {
             setView("single");
             setCurrentIndex(0);
           }}
+          onMouseEnter={(e) => {
+            if (view !== "single") hoverToBlue(e);
+          }}
+          onMouseLeave={(e) => {
+            if (view !== "single") hoverToWhite(e);
+          }}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "4px",
+            border: "1px solid #0072ce",
+            background: view === "single" ? "#0072ce" : "#fff",
+            color: view === "single" ? "#fff" : "#0072ce",
+            cursor: "pointer",
+            fontWeight: 500,
+            transition: "0.3s",
+          }}
         >
           Single Transaction View
         </button>
+
         <button
-          className={"bottom-btn " + (view === "multiple" ? "active" : "")}
           onClick={() => setView("multiple")}
+          onMouseEnter={(e) => {
+            if (view !== "multiple") hoverToBlue(e);
+          }}
+          onMouseLeave={(e) => {
+            if (view !== "multiple") hoverToWhite(e);
+          }}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "4px",
+            border: "1px solid #0072ce",
+            background: view === "multiple" ? "#0072ce" : "#fff",
+            color: view === "multiple" ? "#fff" : "#0072ce",
+            cursor: "pointer",
+            fontWeight: 500,
+            transition: "0.3s",
+          }}
         >
           Multiple Transactions View
         </button>
