@@ -8,7 +8,10 @@ const transactionsData = [
     mode: "Standard Chartered Online Banking",
     amount: "$1,250.75",
     beneficiary: "John Smith",
+    companyName: "Acme Technologies Pvt Ltd",
+    payeeBankBranch: "Standard Chartered Mumbai Fort Branch",
     date: "Aug 7, 2024, 04:00 PM",
+    payeeBankAddress: "123 Fort Road, Mumbai, MH 400001",
   },
   {
     id: "SCB-2024-001235",
@@ -17,7 +20,10 @@ const transactionsData = [
     mode: "Standard Chartered Mobile App",
     amount: "$500.00",
     beneficiary: "Sarah Johnson",
+    companyName: "GreenLeaf Retail LLP",
+    payeeBankBranch: "Standard Chartered Connaught Place Branch",
     date: "Aug 7, 2024, 07:45 PM",
+    payeeBankAddress: "45 CP Lane, New Delhi, DL 110001",
   },
   {
     id: "SCB-2024-001236",
@@ -26,7 +32,10 @@ const transactionsData = [
     mode: "Standard Chartered ATM Transfer",
     amount: "$750.25",
     beneficiary: "Michael Brown",
+    companyName: "BlueOcean Logistics Ltd",
+    payeeBankBranch: "Standard Chartered MG Road Branch",
     date: "Aug 6, 2024, 10:15 PM",
+    payeeBankAddress: "56 MG Road, Bengaluru, KA 560001",
   },
   {
     id: "SCB-2024-001237",
@@ -35,7 +44,10 @@ const transactionsData = [
     mode: "UPI Transfer",
     amount: "$320.00",
     beneficiary: "Priya Sharma",
+    companyName: "Sunrise Consulting Services",
+    payeeBankBranch: "Standard Chartered T Nagar Branch",
     date: "Aug 6, 2024, 08:20 AM",
+    payeeBankAddress: "78 T Nagar Main Rd, Chennai, TN 600017",
   },
   {
     id: "SCB-2024-001238",
@@ -44,7 +56,10 @@ const transactionsData = [
     mode: "Debit Card",
     amount: "$2,000.00",
     beneficiary: "Amit Kumar",
+    companyName: "EduTech Services Pvt Ltd",
+    payeeBankBranch: "Standard Chartered Banjara Hills Branch",
     date: "Aug 5, 2024, 02:15 PM",
+    payeeBankAddress: "89 Banjara Hills Rd, Hyderabad, TS 500034",
   },
 ];
 
@@ -52,7 +67,6 @@ function App() {
   const [view, setView] = useState("single");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState("all");
-  const [accessLevel, setAccessLevel] = useState("Full Access");
 
   const handleDownload = () => {
     const element = document.getElementById("transactionSection");
@@ -141,7 +155,7 @@ function App() {
         color: "#333",
       }}
     >
-      {/* Navbar (no menu links) */}
+      {/* Navbar */}
       <nav
         style={{
           display: "flex",
@@ -169,7 +183,6 @@ function App() {
           </a>
           Standard Chartered
         </div>
-
       </nav>
 
       {/* Page Header */}
@@ -240,32 +253,25 @@ function App() {
           flexWrap: "wrap",
         }}
       >
-        {/* Access Level dropdown */}
+        {/* Access Level fixed as Full Access */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <label htmlFor="accessLevel" style={{ fontSize: "14px" }}>
-            Access Level:
-          </label>
-          <select
-            id="accessLevel"
-            value={accessLevel}
-            onChange={(e) => setAccessLevel(e.target.value)}
+          <label style={{ fontSize: "14px" }}>Access Level:</label>
+          <span
             style={{
-              padding: "8px",
+              padding: "8px 12px",
               borderRadius: "4px",
-              border: "1px solid #ccc",
-              cursor: "pointer",
+              background: "#0072ce",
+              color: "#fff",
+              fontWeight: "600",
+              fontSize: "14px",
             }}
           >
-            <option>Full Access</option>
-            <option>Read Only</option>
-            <option>Auditor</option>
-            <option>Restricted</option>
-          </select>
+            Full Access
+          </span>
         </div>
 
         {/* View + Filter */}
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          {/* Single Transaction button (white, hover blue) */}
           <button
             onClick={() => {
               setView("single");
@@ -291,7 +297,6 @@ function App() {
             Single Transaction
           </button>
 
-          {/* Multiple Transactions button (white, hover blue) */}
           <button
             onClick={() => setView("multiple")}
             onMouseEnter={(e) => {
@@ -397,9 +402,25 @@ function App() {
                 </div>
                 <div>
                   <p style={{ margin: 0 }}>
+                    <strong>Company Name:</strong> {t.companyName}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Payee Bank Branch:</strong> {t.payeeBankBranch}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0 }}>
                     <strong>Date:</strong> {t.date}
                   </p>
                 </div>
+                <div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Payee Bank Address:</strong> {t.payeeBankAddress}
+                  </p>
+                </div>
+
                 <div style={{ gridColumn: "1 / -1" }}>
                   <button type="button" style={statusPillStyle(t.status)}>
                     {t.status}
