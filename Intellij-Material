@@ -1,6 +1,5 @@
 Entity:Transaction
-package com.example.Transactions.entity;
-
+package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -40,6 +39,9 @@ public class Transaction {
 
     @Column(name = "batch_id")
     private Integer batchId;
+
+    // --- Default constructor ---
+    public Transaction() {}
 
     // --- Getters & Setters ---
     public Integer getTransactionId() {
@@ -131,12 +133,64 @@ public class Transaction {
     }
 }
 
-Controller: TransactionController
-package com.example.Transactions.controller;
+Service:
+package com.example.demo.service;
 
+import com.example.demo.entity.Transaction;
+import com.example.demo.repository.TransactionRepository;
+import org.springframework.stereotype.Service;
 
-import com.example.Transactions.entity.Transaction;
-import com.example.Transactions.service.TransactionService;
+import java.util.List;
+
+@Service
+public class TransactionService {
+
+    private final TransactionRepository transactionRepository;
+
+    public TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
+    }
+
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
+
+    public Transaction getTransactionById(Integer id) {
+        return transactionRepository.findById(id).orElse(null);
+    }
+
+    public Transaction createTransaction(Transaction transaction) {
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction updateTransaction(Integer id, Transaction updatedTransaction) {
+        return transactionRepository.findById(id)
+                .map(transaction -> {
+                    transaction.setReferenceNo(updatedTransaction.getReferenceNo());
+                    transaction.setBeneficiary(updatedTransaction.getBeneficiary());
+                    transaction.setCompanyName(updatedTransaction.getCompanyName());
+                    transaction.setDate(updatedTransaction.getDate());
+                    transaction.setAmount(updatedTransaction.getAmount());
+                    transaction.setStatus(updatedTransaction.getStatus());
+                    transaction.setPaymentMethod(updatedTransaction.getPaymentMethod());
+                    transaction.setPayeeBankBranch(updatedTransaction.getPayeeBankBranch());
+                    transaction.setPayeeBankAddress(updatedTransaction.getPayeeBankAddress());
+                    transaction.setBatchId(updatedTransaction.getBatchId());
+                    return transactionRepository.save(transaction);
+                })
+                .orElse(null);
+    }
+
+    public void deleteTransaction(Integer id) {
+        transactionRepository.deleteById(id);
+    }
+}
+
+Controller: 
+package com.example.demo.controller;
+
+import com.example.demo.entity.Transaction;
+import com.example.demo.service.TransactionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -159,7 +213,11 @@ public class TransactionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Transaction> getTransactionById(@PathVariable Integer id) {
-        return ResponseEntity.ok(transactionService.getTransactionById(id));
+        Transaction transaction = transactionService.getTransactionById(id);
+        if (transaction == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(transaction);
     }
 
     @PostMapping
@@ -169,7 +227,11 @@ public class TransactionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Transaction> updateTransaction(@PathVariable Integer id, @RequestBody Transaction transaction) {
-        return ResponseEntity.ok(transactionService.updateTransaction(id, transaction));
+        Transaction updated = transactionService.updateTransaction(id, transaction);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
@@ -178,63 +240,10 @@ public class TransactionController {
         return ResponseEntity.noContent().build();
     }
 }
-Service: TransactionService
-package com.example.Transactions.service;
 
-import com.example.Transactions.entity.Transaction;
-import com.example.Transactions.exception.ResourceNotFoundException;
-import com.example.Transactions.repository.TransactionRepository;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
-
-@Service
-public class TransactionService {
-
-    private final TransactionRepository transactionRepository;
-
-    public TransactionService(TransactionRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
-    }
-
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
-    }
-
-    public Transaction getTransactionById(Integer id) {
-        return transactionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + id));
-    }
-
-    public Transaction createTransaction(Transaction transaction) {
-        return transactionRepository.save(transaction);
-    }
-
-    public Transaction updateTransaction(Integer id, Transaction transactionDetails) {
-        Transaction transaction = getTransactionById(id);
-
-        transaction.setReferenceNo(transactionDetails.getReferenceNo());
-        transaction.setBeneficiary(transactionDetails.getBeneficiary());
-        transaction.setCompanyName(transactionDetails.getCompanyName());
-        transaction.setDate(transactionDetails.getDate());
-        transaction.setAmount(transactionDetails.getAmount());
-        transaction.setStatus(transactionDetails.getStatus());
-        transaction.setPaymentMethod(transactionDetails.getPaymentMethod());
-        transaction.setPayeeBankBranch(transactionDetails.getPayeeBankBranch());
-        transaction.setPayeeBankAddress(transactionDetails.getPayeeBankAddress());
-        transaction.setBatchId(transactionDetails.getBatchId());
-
-        return transactionRepository.save(transaction);
-    }
-
-    public void deleteTransaction(Integer id) {
-        Transaction transaction = getTransactionById(id);
-        transactionRepository.delete(transaction);
-    }
-}
-Repo: TransactionRepo
-package com.example.Transactions.repository;
-
+Repo: 
+package com.example.demo.repository;
 
 import com.example.demo.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -242,13 +251,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
-}
-Exception: ResourceNotFoundException
-package com.example.Transactions.exception;
-
-
-public class ResourceNotFoundException extends RuntimeException {
-    public ResourceNotFoundException(String message) {
-        super(message);
-    }
+    // You can also add custom queries if needed, e.g.:
+    // List<Transaction> findByStatus(String status);
 }
