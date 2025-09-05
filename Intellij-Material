@@ -254,3 +254,146 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     // You can also add custom queries if needed, e.g.:
     // List<Transaction> findByStatus(String status);
 }
+Entity: Transactions
+
+package com.example.demo.entity;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "transactions")
+public class Transaction {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "debit_account", nullable = false)
+    private String debitAccount;
+
+    @Column(name = "account_no", nullable = false)
+    private String accountNo;
+
+    @Column(name = "reference_no", nullable = false)
+    private String referenceNo;
+
+    @Column(name = "company_name", nullable = false)
+    private String companyName;
+
+    @Column(name = "value_date", nullable = false)
+    private LocalDateTime valueDate;
+
+    @Column(name = "payment_method", nullable = false)
+    private String paymentMethod;
+
+    @Column(name = "payee_bank", nullable = false)
+    private String payeeBank;
+
+    @Column(name = "payee_bank_branch", nullable = false)
+    private String payeeBankBranch;
+
+    @Column(name = "payee_bank_address", nullable = false)
+    private String payeeBankAddress;
+
+    @Column(name = "batch_id", nullable = false)
+    private String batchId;
+
+    @Column(name = "amount", nullable = false)
+    private BigDecimal amount;
+
+    // --- Getters and Setters ---
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getDebitAccount() {
+        return debitAccount;
+    }
+
+    public void setDebitAccount(String debitAccount) {
+        this.debitAccount = debitAccount;
+    }
+
+    public String getAccountNo() {
+        return accountNo;
+    }
+
+    public void setAccountNo(String accountNo) {
+        this.accountNo = accountNo;
+    }
+
+    public String getReferenceNo() {
+        return referenceNo;
+    }
+
+    public void setReferenceNo(String referenceNo) {
+        this.referenceNo = referenceNo;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public LocalDateTime getValueDate() {
+        return valueDate;
+    }
+
+    public void setValueDate(LocalDateTime valueDate) {
+        this.valueDate = valueDate;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPayeeBank() {
+        return payeeBank;
+    }
+
+    public void setPayeeBank(String payeeBank) {
+        this.payeeBank = payeeBank;
+    }
+
+    public String getPayeeBankBranch() {
+        return payeeBankBranch;
+    }
+
+    public void setPayeeBankBranch(String payeeBankBranch) {
+        this.payeeBankBranch = payeeBankBranch;
+    }
+
+    public String getPayeeBankAddress() {
+        return payeeBankAddress;
+    }
+
+    public void setPayeeBankAddress(String payeeBankAddress) {
+        this.payeeBankAddress = payeeBankAddress;
+    }
+
+    public String getBatchId() {
+        return batchId;
+    }
+
+    public void setBatchId(String batchId) {
+        this.batchId = batchId;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+}
