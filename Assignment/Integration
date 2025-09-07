@@ -1,172 +1,385 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { jsPDF } from "jspdf"; // Correct import :contentReference[oaicite:0]{index=0}
+// TransactionPreviewInline.jsx
+// Dependencies: npm i jspdf html2canvas
+import React, { useMemo, useRef, useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-const Transactions = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [view, setView] = useState("single");
-  const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// --- Inline styles to avoid CSS conflicts ---
+const S = {
+  page: {
+    fontFamily:
+      "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Noto Sans', 'Helvetica Neue', sans-serif",
+    background: "#f3f4f6",
+    minHeight: "100vh",
+  },
+  shell: {
+    maxWidth: 1120,
+    margin: "0 auto",
+    padding: "16px 20px 40px 20px",
+  },
+  topbar: {
+    height: 60,
+    background: "linear-gradient(90deg,#0a5bd3 0%,#0461c8 60%,#025db9 100%)",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 20px",
+    color: "white",
+    boxShadow: "0 1px 3px rgba(0,0,0,.15)",
+    position: "sticky",
+    top: 0,
+    zIndex: 30,
+  },
+  brand: { display: "flex", alignItems: "center", gap: 10, fontWeight: 700 },
+  brandMark: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    background: "linear-gradient(135deg,#00c389,#0aa8ff)",
+  },
+  headerRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  h1: { fontSize: 22, fontWeight: 600, color: "#111827" },
+  controlRow: { display: "flex", alignItems: "center", gap: 8 },
+  ghostBtn: {
+    fontSize: 13,
+    lineHeight: 1,
+    border: "1px solid #d1d5db",
+    background: "white",
+    color: "#111827",
+    borderRadius: 6,
+    padding: "8px 10px",
+    cursor: "pointer",
+  },
+  primaryBtn: {
+    fontSize: 13,
+    lineHeight: 1,
+    background: "#1d4ed8",
+    color: "white",
+    border: "1px solid #1d4ed8",
+    borderRadius: 6,
+    padding: "8px 12px",
+    cursor: "pointer",
+  },
+  pageBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  seg: {
+    display: "inline-flex",
+    background: "#e5e7eb",
+    borderRadius: 10,
+    padding: 4,
+    gap: 4,
+  },
+  segBtn: (active) => ({
+    fontSize: 12,
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: active ? "white" : "transparent",
+    boxShadow: active ? "0 1px 2px rgba(0,0,0,.06)" : "none",
+    color: "#111827",
+    cursor: "pointer",
+  }),
+  filter: {
+    fontSize: 12,
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+    background: "white",
+  },
+  card: {
+    background: "white",
+    borderRadius: 12,
+    boxShadow: "0 1px 2px rgba(0,0,0,.06), 0 1px 6px rgba(0,0,0,.06)",
+    padding: 22,
+  },
+  accessRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+  },
+  accessPill: {
+    fontSize: 11,
+    background: "#1d4ed8",
+    color: "white",
+    padding: "6px 8px",
+    borderRadius: 6,
+    fontWeight: 600,
+  },
+  infoGridWrap: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 110px",
+    columnGap: 30,
+  },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    rowGap: 10,
+    columnGap: 26,
+    gridColumn: "1 / span 2",
+  },
+  label: { color: "#6b7280", fontSize: 12 },
+  value: { color: "#111827", fontSize: 14, fontWeight: 500 },
+  fieldRow: { display: "flex", flexDirection: "column" },
+  navRail: {
+    gridColumn: 3,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 8,
+  },
+  smallBtn: {
+    fontSize: 12,
+    padding: "8px 10px",
+    background: "white",
+    border: "1px solid #d1d5db",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+  status: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12,
+    padding: "4px 8px",
+    color: "#065f46",
+    background: "#d1fae5",
+    borderRadius: 999,
+    fontWeight: 600,
+    width: "fit-content",
+  },
+  footerRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 14,
+  },
+  linkButtons: { display: "flex", gap: 10 },
+};
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/transactions")
-      .then((response) => {
-        setTransactions(response.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching transactions:", err);
-        setError("Failed to load transactions.");
-        setLoading(false);
-      });
-  }, []);
+const sampleTxns = [
+  {
+    transactionId: "SCB-2024-001234",
+    referenceNo: "REF-ABC123456",
+    paymentMode: "Standard Chartered Online Banking",
+    beneficiary: "Nandini Shah",
+    amount: 1250.75,
+    companyName: "Acme Technologies Pvt Ltd",
+    payerBankBranch: "Standard Chartered Mumbai Fort Branch",
+    payerBankAddress: "123 Fort Road, Mumbai, MH 400001",
+    date: "Aug 7, 2024, 04:00 PM",
+    status: "Completed",
+  },
+  {
+    transactionId: "SCB-2024-001235",
+    referenceNo: "REF-DEF678901",
+    paymentMode: "Standard Chartered Online Banking",
+    beneficiary: "Rohit Verma",
+    amount: 989.0,
+    companyName: "Globex Pvt Ltd",
+    payerBankBranch: "Standard Chartered Andheri East Branch",
+    payerBankAddress: "77 MIDC Rd, Andheri, MH 400093",
+    date: "Aug 8, 2024, 10:30 AM",
+    status: "Completed",
+  },
+];
 
-  const filteredTransactions =
-    filter === "all"
-      ? transactions
-      : transactions.filter((tx) => tx.status.toLowerCase() === filter);
+export default function TransactionPreviewInline({
+  transactions = sampleTxns,
+  onPrevious,
+  onNext,
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [view, setView] = useState("single"); // single | multiple
+  const [filter, setFilter] = useState("All");
+  const cardRef = useRef(null);
 
-  const handlePrint = () => {
-    window.print();
+  const t = transactions[activeIdx] ?? transactions[0];
+  const amountFormatted = useMemo(
+    () => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(t.amount),
+    [t.amount]
+  );
+
+  const handlePrev = () => {
+    if (onPrevious) return onPrevious();
+    setActiveIdx((p) => (p > 0 ? p - 1 : transactions.length - 1));
+  };
+  const handleNext = () => {
+    if (onNext) return onNext();
+    setActiveIdx((p) => (p + 1) % transactions.length);
   };
 
-  const handleDownload = (tx) => {
-    const doc = new jsPDF();
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.text("Transaction Preview", 90, 20);
+  const handlePrint = () => window.print();
 
-    let y = 40;
-    const entries = [
-      ["Transaction ID:", tx.transactionId],
-      ["Reference No:", tx.referenceNo],
-      ["Company:", tx.companyName],
-      ["Beneficiary:", tx.beneficiary],
-      ["Amount:", "$" + (tx.amount ?? "")],
-      ["Status:", tx.status],
-      ["Payment Method:", tx.paymentMethod],
-      ["Payee Bank:", tx.payeeBankBranch ?? ""],
-      ["Date:", tx.valueDate ?? tx.date ?? ""],
-    ];
-
-    entries.forEach(([label, value]) => {
-      const safeValue = value !== undefined && value !== null ? String(value) : "";
-      doc.text(`${label} ${safeValue}`, 20, y);
-      y += 12;
+  const handleDownloadPDF = async () => {
+    if (!cardRef.current) return;
+    const node = cardRef.current;
+    const canvas = await html2canvas(node, {
+      scale: Math.min(2, window.devicePixelRatio || 1.5),
+      backgroundColor: "#ffffff",
     });
-
-    doc.save(`Transaction_${tx.transactionId}.pdf`);
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgWidth = pageWidth;
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+    let y = 0;
+    // Add image; if taller than page, paginate
+    if (imgHeight <= pageHeight) {
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    } else {
+      let sCanvas = canvas;
+      let sHeight = sCanvas.height;
+      const pagePxHeight = Math.floor((pageHeight * sCanvas.width) / pageWidth);
+      let renderedHeight = 0;
+      while (renderedHeight < sHeight) {
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = sCanvas.width;
+        pageCanvas.height = Math.min(pagePxHeight, sHeight - renderedHeight);
+        const ctx = pageCanvas.getContext("2d");
+        ctx.drawImage(
+          sCanvas,
+          0,
+          renderedHeight,
+          sCanvas.width,
+          pageCanvas.height,
+          0,
+          0,
+          sCanvas.width,
+          pageCanvas.height
+        );
+        const pageData = pageCanvas.toDataURL("image/png");
+        if (y > 0) pdf.addPage();
+        pdf.addImage(pageData, "PNG", 0, 0, imgWidth, pageHeight);
+        renderedHeight += pagePxHeight;
+        y += pageHeight;
+      }
+    }
+    pdf.save(`Transaction-Statement-${t.referenceNo}.pdf`);
   };
-
-  if (loading) {
-    return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
-  }
-
-  if (error) {
-    return <h3 style={{ textAlign: "center", color: "red" }}>{error}</h3>;
-  }
-
-  const txToShow = view === "single" ? filteredTransactions.slice(0, 1) : filteredTransactions;
 
   return (
-    <div style={{ padding: 30, fontFamily: "Segoe UI, Arial, sans-serif" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, color: "#004080" }}>Transaction Preview</h2>
-        <div>
-          <button onClick={() => setView("multiple")} style={btnStyle}>Back</button>
-          <button onClick={handlePrint} style={btnStyle}>Print</button>
-          {view === "single" && txToShow[0] && (
-            <button onClick={() => handleDownload(txToShow[0])} style={{ ...btnStyle, background: "green", color: "#fff" }}>
-              Download
-            </button>
-          )}
+    <div style={S.page}>
+      <div style={S.topbar}>
+        <div style={S.brand}>
+          <div style={S.brandMark} />
+          <div style={{ fontSize: 16 }}>Standard Chartered</div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <button onClick={() => setView("single")} style={view === "single" ? activeTab : tab}>Single Transaction</button>
-          <button onClick={() => setView("multiple")} style={view === "multiple" ? activeTab : tab}>Multiple Transactions</button>
-        </div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="all">All</option>
-          <option value="success">Success</option>
-          <option value="failed">Failed</option>
-          <option value="pending">Pending</option>
-        </select>
-      </div>
-
-      {/* Transaction List */}
-      {txToShow.length === 0 ? (
-        <h4 style={{ textAlign: "center", color: "gray" }}>No transactions found</h4>
-      ) : (
-        txToShow.map((tx) => (
-          <div key={tx.transactionId} style={view === "single" ? singleCard : listCard}>
-            {view === "single" ? (
-              <GridView tx={tx} />
-            ) : (
-              <>
-                <h4 style={{ color: "#004080", marginBottom: 10 }}>Transaction ID: {tx.transactionId}</h4>
-                <GridView tx={tx} />
-              </>
-            )}
+      <div style={S.shell}>
+        {/* Title & Actions */}
+        <div style={S.headerRow}>
+          <div style={S.h1}>Transaction Preview</div>
+          <div style={S.controlRow}>
+            <button style={S.ghostBtn} onClick={handlePrint}>Print</button>
+            <button style={S.primaryBtn} onClick={handleDownloadPDF}>Download</button>
           </div>
-        ))
-      )}
+        </div>
+
+        {/* Segmented Controls Row */}
+        <div style={S.pageBar}>
+          <div style={S.seg}>
+            <button style={S.segBtn(view === "single")} onClick={() => setView("single")}>Single Transaction</button>
+            <button style={S.segBtn(view === "multiple")} onClick={() => setView("multiple")}>Multiple Transactions</button>
+          </div>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} style={S.filter}>
+            <option>All</option>
+            <option>Completed</option>
+            <option>Pending</option>
+          </select>
+        </div>
+
+        {/* Card */}
+        <div style={S.card} ref={cardRef} id="transaction-pdf-area">
+          <div style={S.accessRow}>
+            <div style={{ ...S.label, marginRight: 6 }}>Access Level</div>
+            <span style={S.accessPill}>Full Access</span>
+          </div>
+
+          <div style={S.infoGridWrap}>
+            {/* 2-col details grid */}
+            <div style={S.infoGrid}>
+              {/* Left column fields */}
+              <div style={S.fieldRow}>
+                <span style={S.label}>Transaction ID</span>
+                <span style={S.value}>{t.transactionId}</span>
+              </div>
+              <div style={S.fieldRow}>
+                <span style={S.label}>Reference Number</span>
+                <span style={S.value}>{t.referenceNo}</span>
+              </div>
+
+              <div style={S.fieldRow}>
+                <span style={S.label}>Payment Mode</span>
+                <span style={S.value}>{t.paymentMode}</span>
+              </div>
+              <div style={S.fieldRow}>
+                <span style={S.label}>Amount</span>
+                <span style={S.value}>{amountFormatted}</span>
+              </div>
+
+              <div style={S.fieldRow}>
+                <span style={S.label}>Beneficiary</span>
+                <span style={S.value}>{t.beneficiary}</span>
+              </div>
+              <div style={S.fieldRow}>
+                <span style={S.label}>Company Name</span>
+                <span style={S.value}>{t.companyName}</span>
+              </div>
+
+              <div style={S.fieldRow}>
+                <span style={S.label}>Payee Bank Branch</span>
+                <span style={S.value}>{t.payerBankBranch}</span>
+              </div>
+              <div style={S.fieldRow}>
+                <span style={S.label}>Date</span>
+                <span style={S.value}>{t.date}</span>
+              </div>
+
+              <div style={S.fieldRow}>
+                <span style={S.label}>Payee Bank Address</span>
+                <span style={S.value}>{t.payerBankAddress}</span>
+              </div>
+              <div style={S.fieldRow}>
+                <span style={S.label}>Status</span>
+                <span style={S.status}>
+                  <span style={{ width: 8, height: 8, background: "#10b981", borderRadius: 999, display: "inline-block" }} />
+                  {t.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Right-side nav rail */}
+            <div style={S.navRail}>
+              <button style={S.smallBtn} onClick={handlePrev}>Previous</button>
+              <button style={S.smallBtn} onClick={handleNext}>Next</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer action row */}
+        <div style={S.footerRow}>
+          <div />
+          <div style={S.linkButtons}>
+            <button style={S.primaryBtn}>Single Transaction View</button>
+            <button style={S.ghostBtn}>Multiple Transactions View</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-const btnStyle = {
-  padding: "6px 12px",
-  marginRight: "8px",
-  background: "#eee",
-  border: "1px solid #ccc",
-  borderRadius: "4px",
-  cursor: "pointer",
-};
-
-const tab = { ...btnStyle, border: "1px solid #0072cc", color: "#000", background: "#fff" };
-const activeTab = { ...tab, background: "#0072cc", color: "#fff" };
-const selectStyle = { padding: "8px 12px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 };
-const singleCard = {
-  border: "1px solid #ddd",
-  borderRadius: 10,
-  padding: 20,
-  maxWidth: 900,
-  background: "#fff",
-  boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
-  margin: "0 auto",
-};
-const listCard = {
-  border: "1px solid #ddd",
-  borderRadius: 10,
-  padding: 15,
-  marginBottom: 15,
-  background: "#f9f9f9",
-  boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
-};
-
-const GridView = ({ tx }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px 50px" }}>
-    <p><b>Transaction ID:</b> {tx.transactionId}</p>
-    <p><b>Reference No:</b> {tx.referenceNo}</p>
-    <p><b>Company:</b> {tx.companyName}</p>
-    <p><b>Beneficiary:</b> {tx.beneficiary}</p>
-    <p><b>Amount:</b> ${tx.amount}</p>
-    <p><b>Status:</b> {tx.status}</p>
-    <p><b>Payment Method:</b> {tx.paymentMethod}</p>
-    <p><b>Payee Bank:</b> {tx.payeeBankBranch}</p>
-    <p><b>Date:</b> {tx.valueDate ?? tx.date}</p>
-  </div>
-);
-
-export default Transactions;
+}
