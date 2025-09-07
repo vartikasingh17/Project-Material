@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import jsPDF from "jspdf"; // npm install jspdf
+import { jsPDF } from "jspdf"; // Using named import as per documentation :contentReference[oaicite:0]{index=0}
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
-  const [view, setView] = useState("single"); // "single" or "multiple"
+  const [view, setView] = useState("single");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,17 +27,14 @@ const Transactions = () => {
       ? transactions
       : transactions.filter((tx) => tx.status.toLowerCase() === filter);
 
-  // ✅ Handle Print
   const handlePrint = () => {
     window.print();
   };
 
-  // ✅ Handle Download PDF
   const handleDownload = (tx) => {
     const doc = new jsPDF();
     doc.setFont("helvetica", "normal");
     doc.setFontSize(14);
-
     doc.text("Transaction Preview", 90, 20);
 
     let y = 40;
@@ -47,136 +43,55 @@ const Transactions = () => {
       ["Reference No:", tx.referenceNo],
       ["Company:", tx.companyName],
       ["Beneficiary:", tx.beneficiary],
-      ["Amount:", $${tx.amount}],
+      ["Amount:", tx.amount],
       ["Status:", tx.status],
       ["Payment Method:", tx.paymentMethod],
-      ["Payee Bank:", tx.payeeBank],
-      ["Date:", tx.valueDate],
+      ["Payee Bank:", tx.payeeBankBranch],
+      ["Date:", tx.valueDate || tx.date],
     ];
 
     entries.forEach(([label, value]) => {
-      doc.text(${label} ${value}, 20, y);
+      doc.text(`${label} ${value}`, 20, y);
       y += 12;
     });
 
-    doc.save(Transaction_${tx.transactionId}.pdf);
+    doc.save(`Transaction_${tx.transactionId}.pdf`);
   };
 
   if (loading) {
     return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
   }
-
   if (error) {
     return <h3 style={{ textAlign: "center", color: "red" }}>{error}</h3>;
   }
 
-  return (
-    <div style={{ padding: "30px", fontFamily: "Segoe UI, Arial, sans-serif" }}>
-      {/* ✅ Header with buttons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ margin: 0, color: "#004080" }}>Transaction Preview</h2>
+  const txToShow = view === "single" ? filteredTransactions.slice(0, 1) : filteredTransactions;
 
+  return (
+    <div style={{ padding: 30, fontFamily: "Segoe UI, Arial, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+        <h2 style={{ margin: 0, color: "#004080" }}>Transaction Preview</h2>
         <div>
           <button
-            style={{
-              padding: "6px 12px",
-              marginRight: "8px",
-              background: "#eee",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
             onClick={() => setView("multiple")}
-          >
-            Back
-          </button>
-          <button
-            style={{
-              padding: "6px 12px",
-              marginRight: "8px",
-              background: "#eee",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-            onClick={handlePrint}
-          >
-            Print
-          </button>
-          {view === "single" && filteredTransactions.length > 0 && (
-            <button
-              style={{
-                padding: "6px 12px",
-                background: "green",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-              onClick={() => handleDownload(filteredTransactions[0])}
-            >
+            style={btnStyle}
+          >Back</button>
+          <button onClick={handlePrint} style={btnStyle}>Print</button>
+          {view === "single" && txToShow.length > 0 && (
+            <button onClick={() => handleDownload(txToShow[0])} style={{ ...btnStyle, background: "green", color: "#fff" }}>
               Download
             </button>
           )}
         </div>
       </div>
 
-      {/* ✅ Filter and Toggle */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
-          <button
-            onClick={() => setView("single")}
-            style={{
-              padding: "8px 16px",
-              marginRight: "10px",
-              background: view === "single" ? "#0072cc" : "#fff",
-              color: view === "single" ? "#fff" : "#000",
-              border: "1px solid #0072cc",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Single Transaction
-          </button>
-          <button
-            onClick={() => setView("multiple")}
-            style={{
-              padding: "8px 16px",
-              background: view === "multiple" ? "#0072cc" : "#fff",
-              color: view === "multiple" ? "#fff" : "#000",
-              border: "1px solid #0072cc",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Multiple Transactions
-          </button>
+          <button onClick={() => setView("single")} style={view === "single" ? activeTab : tab}>Single Transaction</button>
+          <button onClick={() => setView("multiple")} style={view === "multiple" ? activeTab : tab}>Multiple Transactions</button>
         </div>
-
         <div>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-            }}
-          >
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} style={selectStyle}>
             <option value="all">All</option>
             <option value="success">Success</option>
             <option value="failed">Failed</option>
@@ -185,76 +100,71 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* ✅ Transaction Preview */}
-      {filteredTransactions.length === 0 ? (
-        <h4 style={{ textAlign: "center", color: "gray" }}>
-          No transactions found
-        </h4>
+      {txToShow.length === 0 ? (
+        <h4 style={{ textAlign: "center", color: "gray" }}>No transactions found</h4>
       ) : (
-        <div>
-          {view === "single" ? (
-            <div
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "10px",
-                padding: "20px",
-                maxWidth: "900px",
-                background: "#fff",
-                boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
-                margin: "0 auto",
-              }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "15px 50px",
-                }}
-              >
-                <p><b>Transaction ID:</b> {filteredTransactions[0].transactionId}</p>
-                <p><b>Reference No:</b> {filteredTransactions[0].referenceNo}</p>
-                <p><b>Company:</b> {filteredTransactions[0].companyName}</p>
-                <p><b>Beneficiary:</b> {filteredTransactions[0].beneficiary}</p>
-                <p><b>Amount:</b> ${filteredTransactions[0].amount}</p>
-                <p><b>Status:</b> {filteredTransactions[0].status}</p>
-                <p><b>Payment Method:</b> {filteredTransactions[0].paymentMethod}</p>
-                <p><b>Payee Bank:</b> {filteredTransactions[0].payeeBank}</p>
-                <p><b>Date:</b> {filteredTransactions[0].valueDate}</p>
-              </div>
-            </div>
-          ) : (
-            <div>
-              {filteredTransactions.map((tx) => (
-                <div
-                  key={tx.transactionId}
-                  style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "10px",
-                    padding: "15px",
-                    marginBottom: "15px",
-                    background: "#f9f9f9",
-                    boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
-                  }}
-                >
-                  <h4 style={{ color: "#004080", marginBottom: "10px" }}>
-                    Transaction ID: {tx.transactionId}
-                  </h4>
-                  <p><b>Reference No:</b> {tx.referenceNo}</p>
-                  <p><b>Company:</b> {tx.companyName}</p>
-                  <p><b>Beneficiary:</b> {tx.beneficiary}</p>
-                  <p><b>Amount:</b> ${tx.amount}</p>
-                  <p><b>Status:</b> {tx.status}</p>
-                  <p><b>Payment Method:</b> {tx.paymentMethod}</p>
-                  <p><b>Payee Bank:</b> {tx.payeeBank}</p>
-                  <p><b>Date:</b> {tx.valueDate}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        txToShow.map((tx) => (
+          <div key={tx.transactionId} style={view === "single" ? singleCard : listCard}>
+            {view === "single" ? (
+              <GridView tx={tx} />
+            ) : (
+              <>
+                <h4 style={{ color: "#004080", marginBottom: 10 }}>
+                  Transaction ID: {tx.transactionId}
+                </h4>
+                <GridView tx={tx} />
+              </>
+            )}
+          </div>
+        ))
       )}
     </div>
   );
 };
+
+// Shared Styles
+const btnStyle = {
+  padding: "6px 12px",
+  marginRight: "8px",
+  background: "#eee",
+  border: "1px solid #ccc",
+  borderRadius: "4px",
+  cursor: "pointer",
+};
+const tab = { ...btnStyle, border: "1px solid #0072cc", color: "#000", background: "#fff" };
+const activeTab = { ...tab, background: "#0072cc", color: "#fff" };
+const selectStyle = { padding: "8px 12px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 };
+
+const singleCard = {
+  border: "1px solid #ddd",
+  borderRadius: 10,
+  padding: 20,
+  maxWidth: 900,
+  background: "#fff",
+  boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
+  margin: "0 auto",
+};
+const listCard = {
+  border: "1px solid #ddd",
+  borderRadius: 10,
+  padding: 15,
+  marginBottom: 15,
+  background: "#f9f9f9",
+  boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
+};
+
+const GridView = ({ tx }) => (
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px 50px" }}>
+    <p><b>Transaction ID:</b> {tx.transactionId}</p>
+    <p><b>Reference No:</b> {tx.referenceNo}</p>
+    <p><b>Company:</b> {tx.companyName}</p>
+    <p><b>Beneficiary:</b> {tx.beneficiary}</p>
+    <p><b>Amount:</b> ${tx.amount}</p>
+    <p><b>Status:</b> {tx.status}</p>
+    <p><b>Payment Method:</b> {tx.paymentMethod}</p>
+    <p><b>Payee Bank:</b> {tx.payeeBankBranch}</p>
+    <p><b>Date:</b> {tx.valueDate || tx.date}</p>
+  </div>
+);
 
 export default Transactions;
