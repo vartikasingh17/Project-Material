@@ -1,63 +1,135 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import "./styles/Transactions.css";
 
-function App() {
+const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
-  const [view, setView] = useState("single");
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [view, setView] = useState("single"); // "single" or "multiple"
   const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch data from backend
+  // ✅ Fetch transactions from backend API
   useEffect(() => {
-    axios.get("http://localhost:8080/api/transactions")
+    axios
+      .get("http://localhost:8080/api/transactions")
       .then((response) => {
         setTransactions(response.data);
+        setLoading(false);
       })
-      .catch((error) => {
-        console.error("Error fetching transactions:", error);
+      .catch((err) => {
+        console.error("Error fetching transactions:", err);
+        setError("Failed to load transactions.");
+        setLoading(false);
       });
   }, []);
 
-  // Filter transactions
+  // ✅ Apply filter
   const filteredTransactions =
     filter === "all"
       ? transactions
-      : transactions.filter((t) => t.status === filter);
+      : transactions.filter((tx) => tx.status === filter);
 
-  const safeIndex =
-    filteredTransactions.length === 0
-      ? 0
-      : Math.min(currentIndex, filteredTransactions.length - 1);
+  if (loading) {
+    return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
+  }
 
-  const transactionsToShow =
-    view === "single"
-      ? filteredTransactions.length > 0
-        ? [filteredTransactions[safeIndex]]
-        : []
-      : filteredTransactions;
+  if (error) {
+    return <h3 style={{ textAlign: "center", color: "red" }}>{error}</h3>;
+  }
 
   return (
-    <div>
-      <h1>Transaction Preview</h1>
-      {transactionsToShow.length === 0 ? (
-        <p>No transactions found.</p>
+    <div id="transactionSection" style={{ padding: "20px" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+        Transaction Statement
+      </h2>
+
+      {/* 🔘 Filter dropdown */}
+      <div style={{ marginBottom: "20px", textAlign: "center" }}>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={{ padding: "6px", borderRadius: "5px" }}
+        >
+          <option value="all">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+
+      {/* 🔘 Toggle View */}
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <button
+          onClick={() => setView("single")}
+          style={{
+            padding: "10px 20px",
+            marginRight: "10px",
+            background: view === "single" ? "#0072cc" : "#fff",
+            color: view === "single" ? "#fff" : "#000",
+            border: "1px solid #0072cc",
+            cursor: "pointer",
+            borderRadius: "5px",
+          }}
+        >
+          Single Transaction View
+        </button>
+        <button
+          onClick={() => setView("multiple")}
+          style={{
+            padding: "10px 20px",
+            background: view === "multiple" ? "#0072cc" : "#fff",
+            color: view === "multiple" ? "#fff" : "#000",
+            border: "1px solid #0072cc",
+            cursor: "pointer",
+            borderRadius: "5px",
+          }}
+        >
+          Multiple Transactions View
+        </button>
+      </div>
+
+      {/* 🔘 Transactions List */}
+      {filteredTransactions.length === 0 ? (
+        <h4 style={{ textAlign: "center", color: "gray" }}>
+          No transactions found for filter: {filter}
+        </h4>
       ) : (
-        transactionsToShow.map((t, i) => (
-          <div key={t.transactionId + "-" + i}>
-            <p><b>Transaction ID:</b> {t.transactionId}</p>
-            <p><b>Reference No:</b> {t.referenceNo}</p>
-            <p><b>Beneficiary:</b> {t.beneficiary}</p>
-            <p><b>Company Name:</b> {t.companyName}</p>
-            <p><b>Status:</b> {t.status}</p>
-            <p><b>Amount:</b> {t.amount}</p>
-            <p><b>Payment Method:</b> {t.paymentMethod}</p>
-            <p><b>Payee Bank Branch:</b> {t.payeeBankBranch}</p>
-            <p><b>Payee Bank Address:</b> {t.payeeBankAddress}</p>
-          </div>
-        ))
+        <div>
+          {view === "single" ? (
+            <div style={{ textAlign: "center" }}>
+              <pre>{JSON.stringify(filteredTransactions[0], null, 2)}</pre>
+            </div>
+          ) : (
+            <div>
+              {filteredTransactions.map((tx) => (
+                <div
+                  key={tx.transactionId}
+                  style={{
+                    border: "1px solid #ccc",
+                    borderRadius: "10px",
+                    padding: "15px",
+                    marginBottom: "10px",
+                    background: "#f9f9f9",
+                  }}
+                >
+                  <p><b>Transaction ID:</b> {tx.transactionId}</p>
+                  <p><b>Reference No:</b> {tx.referenceNo}</p>
+                  <p><b>Batch ID:</b> {tx.batchId}</p>
+                  <p><b>Company:</b> {tx.companyName}</p>
+                  <p><b>Amount:</b> {tx.amount}</p>
+                  <p><b>Status:</b> {tx.status}</p>
+                  <p><b>Payment Method:</b> {tx.paymentMethod}</p>
+                  <p><b>Payee Bank:</b> {tx.payeeBank}</p>
+                  <p><b>Date:</b> {tx.valueDate}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
-}
+};
 
-export default App;
+export default Transactions;
