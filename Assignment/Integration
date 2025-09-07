@@ -1,0 +1,63 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+function App() {
+  const [transactions, setTransactions] = useState([]);
+  const [view, setView] = useState("single");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [filter, setFilter] = useState("all");
+
+  // Fetch data from backend
+  useEffect(() => {
+    axios.get("http://localhost:8080/api/transactions")
+      .then((response) => {
+        setTransactions(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching transactions:", error);
+      });
+  }, []);
+
+  // Filter transactions
+  const filteredTransactions =
+    filter === "all"
+      ? transactions
+      : transactions.filter((t) => t.status === filter);
+
+  const safeIndex =
+    filteredTransactions.length === 0
+      ? 0
+      : Math.min(currentIndex, filteredTransactions.length - 1);
+
+  const transactionsToShow =
+    view === "single"
+      ? filteredTransactions.length > 0
+        ? [filteredTransactions[safeIndex]]
+        : []
+      : filteredTransactions;
+
+  return (
+    <div>
+      <h1>Transaction Preview</h1>
+      {transactionsToShow.length === 0 ? (
+        <p>No transactions found.</p>
+      ) : (
+        transactionsToShow.map((t, i) => (
+          <div key={t.transactionId + "-" + i}>
+            <p><b>Transaction ID:</b> {t.transactionId}</p>
+            <p><b>Reference No:</b> {t.referenceNo}</p>
+            <p><b>Beneficiary:</b> {t.beneficiary}</p>
+            <p><b>Company Name:</b> {t.companyName}</p>
+            <p><b>Status:</b> {t.status}</p>
+            <p><b>Amount:</b> {t.amount}</p>
+            <p><b>Payment Method:</b> {t.paymentMethod}</p>
+            <p><b>Payee Bank Branch:</b> {t.payeeBankBranch}</p>
+            <p><b>Payee Bank Address:</b> {t.payeeBankAddress}</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+export default App;
