@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "./styles/Transactions.css";
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -28,7 +27,7 @@ const Transactions = () => {
   const filteredTransactions =
     filter === "all"
       ? transactions
-      : transactions.filter((tx) => tx.status === filter);
+      : transactions.filter((tx) => tx.status.toLowerCase() === filter);
 
   if (loading) {
     return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
@@ -39,8 +38,8 @@ const Transactions = () => {
   }
 
   return (
-    <div id="transactionSection" style={{ padding: "20px" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+    <div style={{ padding: "30px", fontFamily: "Segoe UI, Arial, sans-serif" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "20px", color: "#004080" }}>
         Transaction Statement
       </h2>
 
@@ -49,7 +48,12 @@ const Transactions = () => {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: "6px", borderRadius: "5px" }}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+            fontSize: "14px",
+          }}
         >
           <option value="all">All</option>
           <option value="success">Success</option>
@@ -68,8 +72,8 @@ const Transactions = () => {
             background: view === "single" ? "#0072cc" : "#fff",
             color: view === "single" ? "#fff" : "#000",
             border: "1px solid #0072cc",
+            borderRadius: "6px",
             cursor: "pointer",
-            borderRadius: "5px",
           }}
         >
           Single Transaction View
@@ -81,8 +85,8 @@ const Transactions = () => {
             background: view === "multiple" ? "#0072cc" : "#fff",
             color: view === "multiple" ? "#fff" : "#000",
             border: "1px solid #0072cc",
+            borderRadius: "6px",
             cursor: "pointer",
-            borderRadius: "5px",
           }}
         >
           Multiple Transactions View
@@ -97,8 +101,31 @@ const Transactions = () => {
       ) : (
         <div>
           {view === "single" ? (
-            <div style={{ textAlign: "center" }}>
-              <pre>{JSON.stringify(filteredTransactions[0], null, 2)}</pre>
+            <div
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "10px",
+                padding: "20px",
+                margin: "0 auto",
+                maxWidth: "650px",
+                background: "#fff",
+                boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
+              }}
+            >
+              <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#004080" }}>
+                Transaction Preview
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <p><b>Transaction ID:</b> {filteredTransactions[0].transactionId}</p>
+                <p><b>Reference No:</b> {filteredTransactions[0].referenceNo}</p>
+                <p><b>Company:</b> {filteredTransactions[0].companyName}</p>
+                <p><b>Beneficiary:</b> {filteredTransactions[0].beneficiary}</p>
+                <p><b>Amount:</b> ${filteredTransactions[0].amount}</p>
+                <p><b>Status:</b> {filteredTransactions[0].status}</p>
+                <p><b>Payment Method:</b> {filteredTransactions[0].paymentMethod}</p>
+                <p><b>Payee Bank:</b> {filteredTransactions[0].payeeBank}</p>
+                <p><b>Date:</b> {filteredTransactions[0].valueDate}</p>
+              </div>
             </div>
           ) : (
             <div>
@@ -109,15 +136,19 @@ const Transactions = () => {
                     border: "1px solid #ccc",
                     borderRadius: "10px",
                     padding: "15px",
-                    marginBottom: "10px",
+                    marginBottom: "15px",
                     background: "#f9f9f9",
+                    boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <p><b>Transaction ID:</b> {tx.transactionId}</p>
+                  <h4 style={{ color: "#004080", marginBottom: "10px" }}>
+                    Transaction ID: {tx.transactionId}
+                  </h4>
                   <p><b>Reference No:</b> {tx.referenceNo}</p>
                   <p><b>Batch ID:</b> {tx.batchId}</p>
                   <p><b>Company:</b> {tx.companyName}</p>
-                  <p><b>Amount:</b> {tx.amount}</p>
+                  <p><b>Beneficiary:</b> {tx.beneficiary}</p>
+                  <p><b>Amount:</b> ${tx.amount}</p>
                   <p><b>Status:</b> {tx.status}</p>
                   <p><b>Payment Method:</b> {tx.paymentMethod}</p>
                   <p><b>Payee Bank:</b> {tx.payeeBank}</p>
