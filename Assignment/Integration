@@ -4,159 +4,113 @@ import axios from "axios";
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [view, setView] = useState("single"); // "single" or "multiple"
-  const [filter, setFilter] = useState("all"); // all|success|failed|pending
+  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // will store string where possible
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Fetch transactions
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await axios.get("/api/transactions"); // adjust URL if needed
-        if (!mounted) return;
+    axios
+      .get("http://localhost:8080/api/transactions") // change URL if needed
+      .then((res) => {
         setTransactions(Array.isArray(res.data) ? res.data : []);
-        setError(null);
-      } catch (err) {
-        // prefer backend message if present, else err.message, else fallback
+        setLoading(false);
+      })
+      .catch((err) => {
         const msg =
           err?.response?.data?.message ||
           err?.message ||
           "Failed to load transactions.";
-        if (mounted) setError(String(msg));
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+        setError(msg);
+        setLoading(false);
+      });
   }, []);
 
-  // Filtered list (safe)
-  const filteredTransactions = transactions.filter((tx) => {
-    if (filter === "all") return true;
-    const status = tx?.status ? String(tx.status).toLowerCase() : "";
-    return status === String(filter).toLowerCase();
-  });
-
-  // Keep currentIndex valid when filteredTransactions changes
-  useEffect(() => {
-    if (filteredTransactions.length === 0) {
-      setCurrentIndex(0);
-    } else if (currentIndex > filteredTransactions.length - 1) {
-      setCurrentIndex(0);
-    }
-    // run only when the length changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredTransactions.length]);
+  // Apply filter
+  const filteredTransactions =
+    filter === "all"
+      ? transactions
+      : transactions.filter(
+          (tx) => String(tx.status).toLowerCase() === filter.toLowerCase()
+        );
 
   const currentTransaction =
     filteredTransactions.length > 0 ? filteredTransactions[currentIndex] : null;
 
-  // helpers for printing (simple printable HTML)
-  const escapeHtml = (v) => {
-    if (v == null) return "";
-    return String(v)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  };
-
-  const renderTransactionHTML = (tx) => {
-    const html = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Transaction ${escapeHtml(tx?.transactionId)}</title>
-<style>
-  body{font-family: "Segoe UI", Arial, sans-serif; padding:20px; color:#222}
-  .wrapper{max-width:820px;margin:0 auto}
-  .header{color:#004080;text-align:center;margin-bottom:16px}
-  .card{border:1px solid #ddd;border-radius:10px;padding:22px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px}
-  p{margin:6px 0}
-  b{color:#000}
-</style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="header"><h2>Transaction Preview</h2></div>
-    <div class="card">
-      <div class="grid">
-        <p><b>Transaction ID:</b> ${escapeHtml(tx?.transactionId)}</p>
-        <p><b>Reference No:</b> ${escapeHtml(tx?.referenceNo)}</p>
-        <p><b>Company:</b> ${escapeHtml(tx?.companyName)}</p>
-        <p><b>Beneficiary:</b> ${escapeHtml(tx?.beneficiary)}</p>
-        <p><b>Amount:</b> ${escapeHtml(tx?.amount)}</p>
-        <p><b>Status:</b> ${escapeHtml(tx?.status)}</p>
-        <p><b>Payment Method:</b> ${escapeHtml(tx?.paymentMethod)}</p>
-        <p><b>Payee Bank:</b> ${escapeHtml(tx?.payeeBank)}</p>
-        <p><b>Date:</b> ${escapeHtml(tx?.valueDate)}</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-    return html;
-  };
-
-  // Print current transaction
-  const handlePrint = () => {
-    if (!currentTransaction) {
-      alert("No transaction selected to print.");
-      return;
-    }
-    const html = renderTransactionHTML(currentTransaction);
-    const printWin = window.open("", "_blank", "noopener");
-    if (!printWin) {
-      alert("Popup blocked — allow popups to print.");
-      return;
-    }
-    printWin.document.open();
-    printWin.document.write(html);
-    printWin.document.close();
-    printWin.focus();
-    setTimeout(() => {
-      printWin.print();
-    }, 250);
-  };
-
-  // Download current transaction as JSON
+  // ✅ Download current transaction as JSON
   const handleDownload = () => {
-    if (!currentTransaction) {
-      alert("No transaction selected to download.");
-      return;
-    }
+    if (!currentTransaction) return;
     const blob = new Blob([JSON.stringify(currentTransaction, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = transaction_${currentTransaction.transactionId || "0"}.json;
-    document.body.appendChild(a);
+    a.download = transaction_${currentTransaction.transactionId || "data"}.json;
     a.click();
-    a.remove();
     URL.revokeObjectURL(url);
   };
 
-  if (loading)
+  // ✅ Print current transaction (browser "Save as PDF" works here)
+  const handlePrint = () => {
+    if (!currentTransaction) return;
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Transaction ${currentTransaction.transactionId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h2 { color: #004080; text-align: center; }
+            .card {
+              border: 1px solid #ccc;
+              border-radius: 10px;
+              padding: 20px;
+              max-width: 700px;
+              margin: auto;
+              background: #fff;
+            }
+            p { margin: 6px 0; }
+          </style>
+        </head>
+        <body>
+          <h2>Transaction Details</h2>
+          <div class="card">
+            <p><b>Transaction ID:</b> ${currentTransaction.transactionId}</p>
+            <p><b>Reference No:</b> ${currentTransaction.referenceNo}</p>
+            <p><b>Company:</b> ${currentTransaction.companyName}</p>
+            <p><b>Beneficiary:</b> ${currentTransaction.beneficiary}</p>
+            <p><b>Amount:</b> ${currentTransaction.amount}</p>
+            <p><b>Status:</b> ${currentTransaction.status}</p>
+            <p><b>Payment Method:</b> ${currentTransaction.paymentMethod}</p>
+            <p><b>Payee Bank:</b> ${currentTransaction.payeeBank}</p>
+            <p><b>Date:</b> ${currentTransaction.valueDate}</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  if (loading) {
     return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
+  }
 
   if (error) {
-    // <-- FIXED: ensure error always renders as text
     return (
       <h3 style={{ textAlign: "center", color: "red" }}>
-        {String(error)}
+        {typeof error === "string" ? error : JSON.stringify(error)}
       </h3>
     );
   }
 
   return (
     <div style={{ padding: "30px", fontFamily: "Segoe UI, Arial, sans-serif" }}>
-      {/* Header */}
+      {/* Header with buttons */}
       <div
         style={{
           display: "flex",
@@ -168,18 +122,6 @@ const Transactions = () => {
         <h2 style={{ color: "#004080", margin: 0 }}>Transaction Preview</h2>
         <div>
           <button
-            style={{
-              padding: "8px 16px",
-              marginRight: 10,
-              border: "1px solid #ccc",
-              borderRadius: 6,
-              cursor: "pointer",
-              background: "#f2f2f2",
-            }}
-          >
-            Back
-          </button>
-          <button
             onClick={handlePrint}
             style={{
               padding: "8px 16px",
@@ -187,7 +129,6 @@ const Transactions = () => {
               border: "1px solid #ccc",
               borderRadius: 6,
               cursor: "pointer",
-              background: "#f2f2f2",
             }}
           >
             Print
@@ -208,170 +149,66 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* Toggle + filter */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 20,
-        }}
-      >
-        <button
-          onClick={() => setView("single")}
-          style={{
-            padding: "10px 20px",
-            background: view === "single" ? "#0072cc" : "#fff",
-            color: view === "single" ? "#fff" : "#000",
-            border: "1px solid #0072cc",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-          Single Transaction
-        </button>
-        <button
-          onClick={() => setView("multiple")}
-          style={{
-            padding: "10px 20px",
-            background: view === "multiple" ? "#0072cc" : "#fff",
-            color: view === "multiple" ? "#fff" : "#000",
-            border: "1px solid #0072cc",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-          Multiple Transactions
-        </button>
-
-        <select
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-            setCurrentIndex(0); // reset index on filter change
-          }}
-          style={{
-            marginLeft: "auto",
-            padding: 10,
-            borderRadius: 6,
-            border: "1px solid #ccc",
-          }}
-        >
-          <option value="all">All</option>
-          <option value="success">Success</option>
-          <option value="failed">Failed</option>
-          <option value="pending">Pending</option>
-        </select>
-      </div>
-
-      {/* Content */}
+      {/* Transactions display */}
       {filteredTransactions.length === 0 ? (
         <h4 style={{ textAlign: "center", color: "gray" }}>
           No transactions found for filter: {filter}
         </h4>
-      ) : view === "single" ? (
+      ) : view === "single" && currentTransaction ? (
         <div
           style={{
             border: "1px solid #ccc",
             borderRadius: 10,
             padding: 20,
-            margin: "0 auto",
-            maxWidth: 750,
+            maxWidth: 700,
+            margin: "auto",
             background: "#fff",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-            position: "relative",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 15,
-              fontSize: 14,
-            }}
-          >
-            <p>
-              <b>Transaction ID:</b> {currentTransaction?.transactionId}
-            </p>
-            <p>
-              <b>Reference No:</b> {currentTransaction?.referenceNo}
-            </p>
-            <p>
-              <b>Company:</b> {currentTransaction?.companyName}
-            </p>
-            <p>
-              <b>Beneficiary:</b> {currentTransaction?.beneficiary}
-            </p>
-            <p>
-              <b>Amount:</b> ${currentTransaction?.amount}
-            </p>
-            <p>
-              <b>Status:</b> {currentTransaction?.status}
-            </p>
-            <p>
-              <b>Payment Method:</b> {currentTransaction?.paymentMethod}
-            </p>
-            <p>
-              <b>Payee Bank:</b> {currentTransaction?.payeeBank}
-            </p>
-            <p>
-              <b>Date:</b> {currentTransaction?.valueDate}
-            </p>
-          </div>
-
-          {/* Prev / Next */}
-          <div style={{ textAlign: "right", marginTop: 18 }}>
-            <button
-              onClick={() => setCurrentIndex((p) => Math.max(p - 1, 0))}
-              disabled={currentIndex === 0}
-              style={{
-                padding: "8px 16px",
-                marginRight: 10,
-                border: "1px solid #ccc",
-                borderRadius: 6,
-                background: "#f2f2f2",
-                cursor: currentIndex === 0 ? "not-allowed" : "pointer",
-              }}
-            >
-              Previous
-            </button>
-            <button
-              onClick={() =>
-                setCurrentIndex((p) => Math.min(p + 1, filteredTransactions.length - 1))
-              }
-              disabled={currentIndex === filteredTransactions.length - 1}
-              style={{
-                padding: "8px 16px",
-                border: "1px solid #ccc",
-                borderRadius: 6,
-                background: "#f2f2f2",
-                cursor:
-                  currentIndex === filteredTransactions.length - 1
-                    ? "not-allowed"
-                    : "pointer",
-              }}
-            >
-              Next
-            </button>
-          </div>
+          <p>
+            <b>Transaction ID:</b> {currentTransaction.transactionId}
+          </p>
+          <p>
+            <b>Reference No:</b> {currentTransaction.referenceNo}
+          </p>
+          <p>
+            <b>Company:</b> {currentTransaction.companyName}
+          </p>
+          <p>
+            <b>Beneficiary:</b> {currentTransaction.beneficiary}
+          </p>
+          <p>
+            <b>Amount:</b> {currentTransaction.amount}
+          </p>
+          <p>
+            <b>Status:</b> {currentTransaction.status}
+          </p>
+          <p>
+            <b>Payment Method:</b> {currentTransaction.paymentMethod}
+          </p>
+          <p>
+            <b>Payee Bank:</b> {currentTransaction.payeeBank}
+          </p>
+          <p>
+            <b>Date:</b> {currentTransaction.valueDate}
+          </p>
         </div>
       ) : (
         <div>
-          {filteredTransactions.map((tx, idx) => (
+          {filteredTransactions.map((tx) => (
             <div
-              key={tx.transactionId || idx}
+              key={tx.transactionId}
               style={{
                 border: "1px solid #ccc",
                 borderRadius: 10,
                 padding: 15,
                 marginBottom: 15,
                 background: "#f9f9f9",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
               }}
             >
-              <h4 style={{ color: "#004080", marginBottom: 8 }}>
-                Transaction ID: {tx.transactionId}
-              </h4>
+              <p>
+                <b>Transaction ID:</b> {tx.transactionId}
+              </p>
               <p>
                 <b>Reference No:</b> {tx.referenceNo}
               </p>
@@ -379,19 +216,10 @@ const Transactions = () => {
                 <b>Company:</b> {tx.companyName}
               </p>
               <p>
-                <b>Beneficiary:</b> {tx.beneficiary}
-              </p>
-              <p>
-                <b>Amount:</b> ${tx.amount}
+                <b>Amount:</b> {tx.amount}
               </p>
               <p>
                 <b>Status:</b> {tx.status}
-              </p>
-              <p>
-                <b>Payment Method:</b> {tx.paymentMethod}
-              </p>
-              <p>
-                <b>Payee Bank:</b> {tx.payeeBank}
               </p>
               <p>
                 <b>Date:</b> {tx.valueDate}
