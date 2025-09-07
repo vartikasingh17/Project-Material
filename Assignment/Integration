@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { jsPDF } from "jspdf"; // Using named import as per documentation :contentReference[oaicite:0]{index=0}
+import axios from "axios";
+import { jsPDF } from "jspdf"; // Correct import :contentReference[oaicite:0]{index=0}
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -43,15 +44,16 @@ const Transactions = () => {
       ["Reference No:", tx.referenceNo],
       ["Company:", tx.companyName],
       ["Beneficiary:", tx.beneficiary],
-      ["Amount:", tx.amount],
+      ["Amount:", "$" + (tx.amount ?? "")],
       ["Status:", tx.status],
       ["Payment Method:", tx.paymentMethod],
-      ["Payee Bank:", tx.payeeBankBranch],
-      ["Date:", tx.valueDate || tx.date],
+      ["Payee Bank:", tx.payeeBankBranch ?? ""],
+      ["Date:", tx.valueDate ?? tx.date ?? ""],
     ];
 
     entries.forEach(([label, value]) => {
-      doc.text(`${label} ${value}`, 20, y);
+      const safeValue = value !== undefined && value !== null ? String(value) : "";
+      doc.text(`${label} ${safeValue}`, 20, y);
       y += 12;
     });
 
@@ -61,6 +63,7 @@ const Transactions = () => {
   if (loading) {
     return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
   }
+
   if (error) {
     return <h3 style={{ textAlign: "center", color: "red" }}>{error}</h3>;
   }
@@ -69,15 +72,13 @@ const Transactions = () => {
 
   return (
     <div style={{ padding: 30, fontFamily: "Segoe UI, Arial, sans-serif" }}>
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <h2 style={{ margin: 0, color: "#004080" }}>Transaction Preview</h2>
         <div>
-          <button
-            onClick={() => setView("multiple")}
-            style={btnStyle}
-          >Back</button>
+          <button onClick={() => setView("multiple")} style={btnStyle}>Back</button>
           <button onClick={handlePrint} style={btnStyle}>Print</button>
-          {view === "single" && txToShow.length > 0 && (
+          {view === "single" && txToShow[0] && (
             <button onClick={() => handleDownload(txToShow[0])} style={{ ...btnStyle, background: "green", color: "#fff" }}>
               Download
             </button>
@@ -85,21 +86,25 @@ const Transactions = () => {
         </div>
       </div>
 
+      {/* Controls */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <button onClick={() => setView("single")} style={view === "single" ? activeTab : tab}>Single Transaction</button>
           <button onClick={() => setView("multiple")} style={view === "multiple" ? activeTab : tab}>Multiple Transactions</button>
         </div>
-        <div>
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} style={selectStyle}>
-            <option value="all">All</option>
-            <option value="success">Success</option>
-            <option value="failed">Failed</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={selectStyle}
+        >
+          <option value="all">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+        </select>
       </div>
 
+      {/* Transaction List */}
       {txToShow.length === 0 ? (
         <h4 style={{ textAlign: "center", color: "gray" }}>No transactions found</h4>
       ) : (
@@ -109,9 +114,7 @@ const Transactions = () => {
               <GridView tx={tx} />
             ) : (
               <>
-                <h4 style={{ color: "#004080", marginBottom: 10 }}>
-                  Transaction ID: {tx.transactionId}
-                </h4>
+                <h4 style={{ color: "#004080", marginBottom: 10 }}>Transaction ID: {tx.transactionId}</h4>
                 <GridView tx={tx} />
               </>
             )}
@@ -122,7 +125,6 @@ const Transactions = () => {
   );
 };
 
-// Shared Styles
 const btnStyle = {
   padding: "6px 12px",
   marginRight: "8px",
@@ -131,10 +133,10 @@ const btnStyle = {
   borderRadius: "4px",
   cursor: "pointer",
 };
+
 const tab = { ...btnStyle, border: "1px solid #0072cc", color: "#000", background: "#fff" };
 const activeTab = { ...tab, background: "#0072cc", color: "#fff" };
 const selectStyle = { padding: "8px 12px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 };
-
 const singleCard = {
   border: "1px solid #ddd",
   borderRadius: 10,
@@ -163,7 +165,7 @@ const GridView = ({ tx }) => (
     <p><b>Status:</b> {tx.status}</p>
     <p><b>Payment Method:</b> {tx.paymentMethod}</p>
     <p><b>Payee Bank:</b> {tx.payeeBankBranch}</p>
-    <p><b>Date:</b> {tx.valueDate || tx.date}</p>
+    <p><b>Date:</b> {tx.valueDate ?? tx.date}</p>
   </div>
 );
 
