@@ -7,38 +7,34 @@ const Transactions = () => {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Fetch transactions
+  // ✅ Fetch transactions
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/transactions") // change URL if needed
-      .then((res) => {
-        setTransactions(Array.isArray(res.data) ? res.data : []);
+      .get("http://localhost:8080/api/transactions")
+      .then((response) => {
+        setTransactions(response.data);
         setLoading(false);
       })
       .catch((err) => {
-        const msg =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Failed to load transactions.";
-        setError(msg);
+        console.error("Error fetching transactions:", err);
+        setError("Failed to load transactions.");
         setLoading(false);
       });
   }, []);
 
-  // Apply filter
+  // ✅ Apply filter
   const filteredTransactions =
     filter === "all"
       ? transactions
-      : transactions.filter(
-          (tx) => String(tx.status).toLowerCase() === filter.toLowerCase()
-        );
+      : transactions.filter((tx) => tx.status === filter);
 
   const currentTransaction =
-    filteredTransactions.length > 0 ? filteredTransactions[currentIndex] : null;
+    view === "single" && filteredTransactions.length > 0
+      ? filteredTransactions[0]
+      : null;
 
-  // ✅ Download current transaction as JSON
+  // ✅ Download JSON
   const handleDownload = () => {
     if (!currentTransaction) return;
     const blob = new Blob([JSON.stringify(currentTransaction, null, 2)], {
@@ -47,53 +43,16 @@ const Transactions = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = transaction_${currentTransaction.transactionId || "data"}.json;
+    a.download = `transaction_${
+      currentTransaction.transactionId || "data"
+    }.json`; // ✅ backticks fixed
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // ✅ Print current transaction (browser "Save as PDF" works here)
+  // ✅ Print as PDF
   const handlePrint = () => {
-    if (!currentTransaction) return;
-    const printWindow = window.open("", "_blank", "width=800,height=600");
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Transaction ${currentTransaction.transactionId}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h2 { color: #004080; text-align: center; }
-            .card {
-              border: 1px solid #ccc;
-              border-radius: 10px;
-              padding: 20px;
-              max-width: 700px;
-              margin: auto;
-              background: #fff;
-            }
-            p { margin: 6px 0; }
-          </style>
-        </head>
-        <body>
-          <h2>Transaction Details</h2>
-          <div class="card">
-            <p><b>Transaction ID:</b> ${currentTransaction.transactionId}</p>
-            <p><b>Reference No:</b> ${currentTransaction.referenceNo}</p>
-            <p><b>Company:</b> ${currentTransaction.companyName}</p>
-            <p><b>Beneficiary:</b> ${currentTransaction.beneficiary}</p>
-            <p><b>Amount:</b> ${currentTransaction.amount}</p>
-            <p><b>Status:</b> ${currentTransaction.status}</p>
-            <p><b>Payment Method:</b> ${currentTransaction.paymentMethod}</p>
-            <p><b>Payee Bank:</b> ${currentTransaction.payeeBank}</p>
-            <p><b>Date:</b> ${currentTransaction.valueDate}</p>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+    window.print();
   };
 
   if (loading) {
@@ -109,123 +68,187 @@ const Transactions = () => {
   }
 
   return (
-    <div style={{ padding: "30px", fontFamily: "Segoe UI, Arial, sans-serif" }}>
-      {/* Header with buttons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <h2 style={{ color: "#004080", margin: 0 }}>Transaction Preview</h2>
-        <div>
-          <button
-            onClick={handlePrint}
-            style={{
-              padding: "8px 16px",
-              marginRight: 10,
-              border: "1px solid #ccc",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
-          >
-            Print
-          </button>
+    <div style={{ padding: "20px", fontFamily: "Segoe UI, sans-serif" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+        Transaction Statement
+      </h2>
+
+      {/* 🔘 Filter dropdown */}
+      <div style={{ marginBottom: "20px", textAlign: "center" }}>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={{
+            padding: "6px 10px",
+            borderRadius: "5px",
+            border: "1px solid #0072cc",
+          }}
+        >
+          <option value="all">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+
+      {/* 🔘 Toggle View */}
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <button
+          onClick={() => setView("single")}
+          style={{
+            padding: "10px 20px",
+            marginRight: "10px",
+            background: view === "single" ? "#0072cc" : "#fff",
+            color: view === "single" ? "#fff" : "#000",
+            border: "1px solid #0072cc",
+            cursor: "pointer",
+            borderRadius: "5px",
+          }}
+        >
+          Single Transaction View
+        </button>
+        <button
+          onClick={() => setView("multiple")}
+          style={{
+            padding: "10px 20px",
+            background: view === "multiple" ? "#0072cc" : "#fff",
+            color: view === "multiple" ? "#fff" : "#000",
+            border: "1px solid #0072cc",
+            cursor: "pointer",
+            borderRadius: "5px",
+          }}
+        >
+          Multiple Transactions View
+        </button>
+      </div>
+
+      {/* 🔘 Action buttons */}
+      {currentTransaction && (
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
           <button
             onClick={handleDownload}
             style={{
-              padding: "8px 16px",
-              border: "1px solid green",
-              borderRadius: 6,
-              cursor: "pointer",
-              background: "green",
+              padding: "8px 15px",
+              marginRight: "10px",
+              background: "#28a745",
               color: "#fff",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
             }}
           >
-            Download
+            Download JSON
+          </button>
+          <button
+            onClick={handlePrint}
+            style={{
+              padding: "8px 15px",
+              background: "#6c757d",
+              color: "#fff",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            Print / Save PDF
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Transactions display */}
+      {/* 🔘 Transactions List */}
       {filteredTransactions.length === 0 ? (
         <h4 style={{ textAlign: "center", color: "gray" }}>
           No transactions found for filter: {filter}
         </h4>
-      ) : view === "single" && currentTransaction ? (
-        <div
-          style={{
-            border: "1px solid #ccc",
-            borderRadius: 10,
-            padding: 20,
-            maxWidth: 700,
-            margin: "auto",
-            background: "#fff",
-          }}
-        >
-          <p>
-            <b>Transaction ID:</b> {currentTransaction.transactionId}
-          </p>
-          <p>
-            <b>Reference No:</b> {currentTransaction.referenceNo}
-          </p>
-          <p>
-            <b>Company:</b> {currentTransaction.companyName}
-          </p>
-          <p>
-            <b>Beneficiary:</b> {currentTransaction.beneficiary}
-          </p>
-          <p>
-            <b>Amount:</b> {currentTransaction.amount}
-          </p>
-          <p>
-            <b>Status:</b> {currentTransaction.status}
-          </p>
-          <p>
-            <b>Payment Method:</b> {currentTransaction.paymentMethod}
-          </p>
-          <p>
-            <b>Payee Bank:</b> {currentTransaction.payeeBank}
-          </p>
-          <p>
-            <b>Date:</b> {currentTransaction.valueDate}
-          </p>
-        </div>
       ) : (
         <div>
-          {filteredTransactions.map((tx) => (
+          {view === "single" ? (
             <div
-              key={tx.transactionId}
               style={{
                 border: "1px solid #ccc",
-                borderRadius: 10,
-                padding: 15,
-                marginBottom: 15,
-                background: "#f9f9f9",
+                borderRadius: "10px",
+                padding: "20px",
+                margin: "0 auto",
+                maxWidth: "600px",
+                background: "#fff",
+                boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
               }}
             >
+              <h3
+                style={{
+                  textAlign: "center",
+                  marginBottom: "15px",
+                  color: "#004080",
+                }}
+              >
+                Transaction Preview
+              </h3>
               <p>
-                <b>Transaction ID:</b> {tx.transactionId}
+                <b>Transaction ID:</b> {currentTransaction.transactionId}
               </p>
               <p>
-                <b>Reference No:</b> {tx.referenceNo}
+                <b>Reference No:</b> {currentTransaction.referenceNo}
               </p>
               <p>
-                <b>Company:</b> {tx.companyName}
+                <b>Company:</b> {currentTransaction.companyName}
               </p>
               <p>
-                <b>Amount:</b> {tx.amount}
+                <b>Amount:</b> {currentTransaction.amount}
               </p>
               <p>
-                <b>Status:</b> {tx.status}
+                <b>Status:</b> {currentTransaction.status}
               </p>
               <p>
-                <b>Date:</b> {tx.valueDate}
+                <b>Payment Method:</b> {currentTransaction.paymentMethod}
+              </p>
+              <p>
+                <b>Payee Bank:</b> {currentTransaction.payeeBank}
+              </p>
+              <p>
+                <b>Date:</b> {currentTransaction.valueDate}
               </p>
             </div>
-          ))}
+          ) : (
+            <div>
+              {filteredTransactions.map((tx) => (
+                <div
+                  key={tx.transactionId}
+                  style={{
+                    border: "1px solid #ccc",
+                    borderRadius: "10px",
+                    padding: "15px",
+                    marginBottom: "10px",
+                    background: "#f9f9f9",
+                  }}
+                >
+                  <p>
+                    <b>Transaction ID:</b> {tx.transactionId}
+                  </p>
+                  <p>
+                    <b>Reference No:</b> {tx.referenceNo}
+                  </p>
+                  <p>
+                    <b>Company:</b> {tx.companyName}
+                  </p>
+                  <p>
+                    <b>Amount:</b> {tx.amount}
+                  </p>
+                  <p>
+                    <b>Status:</b> {tx.status}
+                  </p>
+                  <p>
+                    <b>Payment Method:</b> {tx.paymentMethod}
+                  </p>
+                  <p>
+                    <b>Payee Bank:</b> {tx.payeeBank}
+                  </p>
+                  <p>
+                    <b>Date:</b> {tx.valueDate}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
