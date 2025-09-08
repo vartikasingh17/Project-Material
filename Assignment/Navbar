@@ -1,0 +1,327 @@
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { Download, Printer } from "lucide-react";
+
+const Transactions = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [view, setView] = useState("single");
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/transactions")
+      .then((response) => {
+        setTransactions(response.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching transactions:", err);
+        setError("Failed to load transactions.");
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredTransactions =
+    filter === "all"
+      ? transactions
+      : transactions.filter((tx) => tx.status.toLowerCase() === filter);
+
+  // reset current index if filtered list changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [filter, transactions]);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownload = async () => {
+    const input = contentRef.current;
+    const canvas = await html2canvas(input);
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save("Transaction-Statement.pdf");
+  };
+
+  if (loading)
+    return <h3 style={{ textAlign: "center" }}>Loading transactions...</h3>;
+  if (error)
+    return <h3 style={{ textAlign: "center", color: "red" }}>{error}</h3>;
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#f5f6fa",
+        minHeight: "100vh",
+        padding: "20px",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <h1 style={{ fontSize: "20px", fontWeight: "600", color: "#333" }}>
+          Transaction Preview
+        </h1>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={handlePrint}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              border: "1px solid #ccc",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            <Printer size={16} /> Print
+          </button>
+          <button
+            onClick={handleDownload}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              backgroundColor: "#0070c0",
+              color: "white",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <Download size={16} /> Download
+          </button>
+        </div>
+      </div>
+
+      {/* Filters & Toggle */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={() => setView("single")}
+            style={{
+              background: view === "single" ? "#0070c0" : "white",
+              color: view === "single" ? "white" : "black",
+              padding: "8px 14px",
+              borderRadius: "6px",
+              border: "1px solid #0070c0",
+              cursor: "pointer",
+            }}
+          >
+            Single Transaction
+          </button>
+          <button
+            onClick={() => setView("multiple")}
+            style={{
+              background: view === "multiple" ? "#0070c0" : "white",
+              color: view === "multiple" ? "white" : "black",
+              padding: "8px 14px",
+              borderRadius: "6px",
+              border: "1px solid #0070c0",
+              cursor: "pointer",
+            }}
+          >
+            Multiple Transactions
+          </button>
+        </div>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+            fontSize: "14px",
+          }}
+        >
+          <option value="all">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+
+      {/* Transaction Preview */}
+      {filteredTransactions.length === 0 ? (
+        <h4 style={{ textAlign: "center", color: "gray" }}>
+          No transactions found
+        </h4>
+      ) : (
+        <div ref={contentRef}>
+          {view === "single" ? (
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                padding: "20px",
+                marginBottom: "20px",
+              }}
+            >
+              {/* Transaction Details */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "15px 40px",
+                  fontSize: "14px",
+                  color: "#444",
+                }}
+              >
+                <p>
+                  <strong>Transaction ID:</strong>{" "}
+                  {filteredTransactions[currentIndex].transactionId}
+                </p>
+                <p>
+                  <strong>Reference No:</strong>{" "}
+                  {filteredTransactions[currentIndex].referenceNo}
+                </p>
+                <p>
+                  <strong>Company:</strong>{" "}
+                  {filteredTransactions[currentIndex].companyName}
+                </p>
+                <p>
+                  <strong>Beneficiary:</strong>{" "}
+                  {filteredTransactions[currentIndex].beneficiary}
+                </p>
+                <p>
+                  <strong>Amount:</strong> $
+                  {filteredTransactions[currentIndex].amount}
+                </p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  {filteredTransactions[currentIndex].status}
+                </p>
+                <p>
+                  <strong>Payment Method:</strong>{" "}
+                  {filteredTransactions[currentIndex].paymentMethod}
+                </p>
+                <p>
+                  <strong>Payee Bank:</strong>{" "}
+                  {filteredTransactions[currentIndex].payeeBank}
+                </p>
+                <p>
+                  <strong>Date:</strong>{" "}
+                  {filteredTransactions[currentIndex].valueDate}
+                </p>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "20px",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  onClick={() => setCurrentIndex((prev) => prev - 1)}
+                  disabled={currentIndex === 0}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                    background: currentIndex === 0 ? "#eee" : "white",
+                    cursor:
+                      currentIndex === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentIndex((prev) => prev + 1)}
+                  disabled={currentIndex === filteredTransactions.length - 1}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                    background:
+                      currentIndex === filteredTransactions.length - 1
+                        ? "#eee"
+                        : "white",
+                    cursor:
+                      currentIndex === filteredTransactions.length - 1
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : (
+            filteredTransactions.map((tx) => (
+              <div
+                key={tx.transactionId}
+                style={{
+                  background: "white",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                  padding: "20px",
+                  marginBottom: "20px",
+                }}
+              >
+                <h4 style={{ color: "#004080", marginBottom: "10px" }}>
+                  Transaction ID: {tx.transactionId}
+                </h4>
+                <p>
+                  <strong>Reference No:</strong> {tx.referenceNo}
+                </p>
+                <p>
+                  <strong>Company:</strong> {tx.companyName}
+                </p>
+                <p>
+                  <strong>Beneficiary:</strong> {tx.beneficiary}
+                </p>
+                <p>
+                  <strong>Amount:</strong> ${tx.amount}
+                </p>
+                <p>
+                  <strong>Status:</strong> {tx.status}
+                </p>
+                <p>
+                  <strong>Payment Method:</strong> {tx.paymentMethod}
+                </p>
+                <p>
+                  <strong>Payee Bank:</strong> {tx.payeeBank}
+                </p>
+                <p>
+                  <strong>Date:</strong> {tx.valueDate}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Transactions;
